@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:#fff;}
+  body{font-family:Georgia,'Times New Roman',serif;color:#1a1a1a;-webkit-font-smoothing:antialiased;}
+  a{color:#1a44cc;text-decoration:none;} a:hover{text-decoration:underline;}
+  [contenteditable][data-ph]:empty:before{content:attr(data-ph);color:#bcbcbc;font-style:italic;}
+  ::selection{background:#1a44cc;color:#fff;}
+</style>
+</helmet>
+<div style="position:relative;width:100vw;height:100vh;overflow:hidden;display:flex;flex-direction:column;background:#fff;">
+
+  <div style="display:flex;justify-content:center;padding:13px 16px 0;flex:none;">
+    <div style="{{ headerInnerStyle }}">
+      <h1 style="margin: 0; font-size: 20px; font-weight: normal; letter-spacing: .2px; font-family: Roboto">Xavier Dersy</h1>
+      <div style="position:relative;" ref="{{ pwWrapRef }}">
+        <span onClick="{{ lockClick }}" title="{{ lockHint }}" style="{{ lockStyle }}" style-hover="{{ lockHoverStyle }}">
+          <div style="{{ lockShackleStyle }}"></div>
+          <div style="{{ lockBodyStyle }}"></div>
+        </span>
+        <sc-if value="{{ pwOpen }}" hint-placeholder-val="{{ false }}">
+          <input type="password" autoFocus="{{ true }}" onKeyDown="{{ onPwKey }}" onBlur="{{ onPwBlur }}" placeholder="{{ pwPlaceholder }}" style="{{ pwInputStyle }}" />
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:16px;">
+    <div ref="{{ gridRef }}" style="display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(5,1fr);gap:6px;height:100%;aspect-ratio:2;max-width:100%;">
+      <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="50">
+        <div onClick="{{ t.open }}" onDrop="{{ t.onDrop }}" onDragOver="{{ allowDrop }}" title="{{ t.hint }}" style="position:relative;background:#fff;border:1px solid #e2e2e2;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;" style-hover="{{ t.hover }}">
+          <span style="{{ t.numStyle }}">{{ t.label }}</span>
+          <div style="{{ t.bg }}"></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-if value="{{ open }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ close }}" style="position:fixed;inset:0;background:rgba(17,17,17,.3);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding:5vh 16px;">
+      <div onClick="{{ stop }}" style="position:relative;width:min(720px,94vw);max-height:90vh;overflow-y:auto;background:#fff;border-radius:8px;box-shadow:0 24px 70px rgba(0,0,0,.2);padding:44px 48px 52px;">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;">
+          <div style="display:flex;align-items:center;gap:16px;font-family:'Courier New',monospace;font-size:11px;letter-spacing:1.5px;color:#a6a6a6;">
+            <span onClick="{{ prev }}" style="cursor:pointer;font-size:15px;">←</span>
+            <span>{{ activeLabel }} / 50</span>
+            <span onClick="{{ next }}" style="cursor:pointer;font-size:15px;">→</span>
+          </div>
+          <span onClick="{{ close }}" style="cursor:pointer;font-size:22px;line-height:1;color:#9a9a9a;">×</span>
+        </div>
+
+        <div contentEditable="{{ unlocked }}" suppressContentEditableWarning="{{ true }}" data-ph="{{ titlePh }}" onBlur="{{ onTitleBlur }}" dangerouslySetInnerHTML="{{ titleHtml }}" style="font-size:30px;line-height:1.2;font-weight:normal;outline:none;margin-bottom:14px;"></div>
+
+        <div contentEditable="{{ unlocked }}" suppressContentEditableWarning="{{ true }}" data-ph="{{ descPh }}" onBlur="{{ onDescBlur }}" dangerouslySetInnerHTML="{{ descHtml }}" style="font-size:15px;line-height:1.65;color:#3a3a3a;outline:none;"></div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:30px;">
+          <sc-for list="{{ photos }}" as="p" hint-placeholder-count="0">
+            <div onDrop="{{ p.onDrop }}" onDragOver="{{ allowDrop }}" style="position:relative;">
+              <div style="{{ p.style }}"></div>
+              <span onClick="{{ p.remove }}" style="{{ p.removeStyle }}">REMOVE</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ canAdd }}" hint-placeholder-val="{{ true }}">
+            <div onClick="{{ addNext }}" onDrop="{{ addDrop }}" onDragOver="{{ allowDrop }}" style="border:1px dashed #d2d2d2;border-radius:5px;padding:44px 20px;text-align:center;cursor:pointer;color:#b0b0b0;font-family:'Courier New',monospace;font-size:12px;letter-spacing:.5px;">+ add image · or drop one here</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <input type="file" accept="image/*" ref="{{ fileRef }}" onChange="{{ onFile }}" style="display:none;">
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#111111&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#1a44cc&quot;,&quot;#111111&quot;,&quot;#b0451f&quot;,&quot;#2f7d4f&quot;]},&quot;showTileNumbers&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const PW_HASH = '7b653a62faee3d451d20a3c84a5737c5f2d6f2a60d027fc5c6cd014d2a3f396c';
+
+class Component extends DCLogic {
+  state = { open:false, active:0, view:'t0', images:{}, texts:{}, unlocked:false, pwOpen:false, pwError:false, mosaicWidth:0 };
+  fileRef = React.createRef();
+  pwWrapRef = React.createRef();
+  gridRef = React.createRef();
+  pendingKey = null;
+
+  componentDidMount(){
+    let images={}, texts={}, unlocked=false;
+    try{ images = JSON.parse(localStorage.getItem('pm_images_v1')) || {}; }catch(_){}
+    try{ texts = JSON.parse(localStorage.getItem('pm_texts_v1')) || {}; }catch(_){}
+    try{ unlocked = sessionStorage.getItem('pm_unlocked_v1')==='1'; }catch(_){}
+    this.setState({ images, texts, unlocked });
+    this._key = this.onKey.bind(this);
+    window.addEventListener('keydown', this._key);
+    this._outsideClick = this.onOutsideClick.bind(this);
+    document.addEventListener('mousedown', this._outsideClick);
+    if(this.gridRef.current && typeof ResizeObserver!=='undefined'){
+      this._ro = new ResizeObserver((entries)=>{
+        const box = entries[0] && entries[0].contentRect;
+        const w = box ? box.width : this.gridRef.current.getBoundingClientRect().width;
+        this.setState({ mosaicWidth: Math.round(w) });
+      });
+      this._ro.observe(this.gridRef.current);
+    }
+  }
+  componentWillUnmount(){
+    window.removeEventListener('keydown', this._key);
+    document.removeEventListener('mousedown', this._outsideClick);
+    if(this._ro) this._ro.disconnect();
+  }
+
+  onOutsideClick(e){
+    if(!this.state.pwOpen) return;
+    if(this.pwWrapRef.current && this.pwWrapRef.current.contains(e.target)) return;
+    this.setState({ pwOpen:false, pwError:false });
+  }
+
+  async checkPassword(pw){
+    try{
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+      const hex = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+      return hex === PW_HASH;
+    }catch(_){ return false; }
+  }
+
+  onKey(e){
+    if(!this.state.open) return;
+    if(e.key==='Escape'){ this.setState({open:false}); return; }
+    if(document.activeElement && document.activeElement.isContentEditable) return;
+    if(e.key==='ArrowLeft') this.go(-1);
+    else if(e.key==='ArrowRight') this.go(1);
+  }
+
+  go(d){ this.setState(s=>{ const n=(s.active+d+50)%50; return { active:n, view:'t'+n }; }); }
+  openAt(n){ this.setState({ open:true, active:n, view:'t'+n }); }
+
+  persistImages(images){ try{ localStorage.setItem('pm_images_v1', JSON.stringify(images)); }catch(err){ console.warn('image storage full — image kept in memory only', err); } }
+  persistTexts(texts){ try{ localStorage.setItem('pm_texts_v1', JSON.stringify(texts)); }catch(err){ console.warn(err); } }
+  saveText(key,val){ if(!this.state.unlocked) return; this.setState(s=>{ const texts={...s.texts,[key]:val}; this.persistTexts(texts); return {texts}; }); }
+
+  pickFor(key){ if(!this.state.unlocked) return; this.pendingKey=key; if(this.fileRef.current) this.fileRef.current.click(); }
+  removeImage(key){ if(!this.state.unlocked) return; this.setState(s=>{ const images={...s.images}; delete images[key]; this.persistImages(images); return {images}; }); }
+  onFile(e){ if(!this.state.unlocked){ e.target.value=''; return; } const f=e.target.files && e.target.files[0]; if(f) this.loadFile(f, this.pendingKey, true); e.target.value=''; }
+  onDropKey(key,e,setView){ e.preventDefault(); if(!this.state.unlocked) return; const f=e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if(f) this.loadFile(f, key, setView); }
+
+  loadFile(file, key, setView){
+    if(!key) return;
+    const done=(data)=>{ this.setState(s=>{ const images={...s.images,[key]:data}; this.persistImages(images); return setView?{images,view:key}:{images}; }); };
+    if(file.type==='image/gif'){ const r=new FileReader(); r.onload=e=>done(e.target.result); r.readAsDataURL(file); return; }
+    const r=new FileReader();
+    r.onload=e=>{ const img=new Image(); img.onload=()=>{ const max=760; const sc=Math.min(1, max/Math.max(img.width,img.height)); const w=Math.max(1,Math.round(img.width*sc)), h=Math.max(1,Math.round(img.height*sc)); const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); let data; try{ data=c.toDataURL('image/jpeg',0.82); }catch(_){ data=e.target.result; } done(data); }; img.onerror=()=>done(e.target.result); img.src=e.target.result; };
+    r.readAsDataURL(file);
+  }
+
+  renderVals(){
+    const { images, texts, open, active, view, unlocked, pwOpen, pwError, mosaicWidth } = this.state;
+    const accent = this.props.accentColor || '#1a44cc';
+    const showNums = this.props.showTileNumbers !== false;
+    const esc=(t)=>(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+
+    const tiles = Array.from({length:50},(_,i)=>{
+      const key='t'+i; const img=images[key]; const label=String(i+1).padStart(2,'0');
+      return {
+        label: showNums ? label : '',
+        hint: 'Project '+label+(img?'':' — drop an image or click to open'),
+        numStyle: { fontFamily:"'Courier New',monospace", fontSize:'11px', color:'#cccccc' },
+        bg: img ? { position:'absolute', inset:0, backgroundImage:`url(${img})`, backgroundSize:'cover', backgroundPosition:'center' } : { display:'none' },
+        hover: { boxShadow:`inset 0 0 0 2px ${accent}`, zIndex:2 },
+        open: ()=>this.openAt(i),
+        onDrop: (e)=>this.onDropKey(key,e,false)
+      };
+    });
+
+    const n=active;
+    const orderKeys=['t'+n,'g'+n+'-0','g'+n+'-1','g'+n+'-2','g'+n+'-3','g'+n+'-4'];
+    const photos=orderKeys.filter(k=>images[k]).map(k=>({
+      style: { width:'100%', height:'46vh', minHeight:'220px', maxHeight:'70vh', backgroundImage:`url(${images[k]})`, backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', backgroundColor:'#fafafa', borderRadius:'5px' },
+      onDrop:(e)=>this.onDropKey(k,e,false),
+      remove:(e)=>{ if(e)e.stopPropagation(); this.removeImage(k); },
+      removeStyle: unlocked ? { position:'absolute', top:'10px', right:'10px', background:'rgba(255,255,255,.92)', borderRadius:'4px', padding:'3px 9px', fontFamily:"'Courier New',monospace", fontSize:'10px', letterSpacing:'.5px', color:'#555', cursor:'pointer' } : { display:'none' }
+    }));
+    const firstEmpty=orderKeys.find(k=>!images[k]);
+
+    return {
+      tiles, open, unlocked,
+      allowDrop:(e)=>e.preventDefault(),
+      activeLabel: String(n+1).padStart(2,'0'),
+      photos,
+      canAdd: unlocked && !!firstEmpty,
+      addNext: ()=>{ if(firstEmpty) this.pickFor(firstEmpty); },
+      addDrop: (e)=>{ if(firstEmpty) this.onDropKey(firstEmpty,e,false); },
+      titleHtml:{ __html: esc(texts['title'+n]) },
+      descHtml:{ __html: esc(texts['desc'+n]) },
+      titlePh: unlocked ? 'Untitled project' : '',
+      descPh: unlocked ? 'Click to add a description…' : '',
+      onTitleBlur:(e)=>this.saveText('title'+n, e.target.innerText),
+      onDescBlur:(e)=>this.saveText('desc'+n, e.target.innerText),
+      fileRef:this.fileRef,
+      onFile:(e)=>this.onFile(e),
+      pwWrapRef:this.pwWrapRef,
+      gridRef:this.gridRef,
+      headerInnerStyle: { width: mosaicWidth ? mosaicWidth+'px' : 'auto', display:'flex', alignItems:'baseline', justifyContent:'space-between' },
+      close:(e)=>{ if(e)e.stopPropagation(); this.setState({open:false}); },
+      stop:(e)=>e.stopPropagation(),
+      prev:(e)=>{ if(e)e.stopPropagation(); this.go(-1); },
+      next:(e)=>{ if(e)e.stopPropagation(); this.go(1); },
+
+      lockHint: unlocked ? 'Editing unlocked — click to lock' : 'Click to unlock editing',
+      lockStyle: { display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', width:'26px', height:'26px', cursor:'pointer' },
+      lockHoverStyle: { filter:'brightness(0.65)' },
+      lockShackleStyle: { width:'9px', height:'7px', border:'1.6px solid ' + (unlocked ? accent : '#c7c7c7'), borderBottom:'none', borderRadius:'5px 5px 0 0', boxSizing:'border-box' },
+      lockBodyStyle: { width:'13px', height:'9px', background: unlocked ? accent : '#c7c7c7', borderRadius:'1.5px', marginTop:'-1px' },
+      lockClick: (e)=>{
+        e.stopPropagation();
+        if(this.state.unlocked){
+          try{ sessionStorage.removeItem('pm_unlocked_v1'); }catch(_){}
+          this.setState({ unlocked:false, pwOpen:false, pwError:false });
+        } else {
+          this.setState({ pwOpen:true, pwError:false });
+        }
+      },
+      pwOpen,
+      pwPlaceholder: pwError ? 'wrong' : 'password',
+      pwInputStyle: { position:'absolute', top:'26px', right:0, zIndex:50, width:'104px', fontSize:'11px', fontFamily:"'Courier New',monospace", letterSpacing:'.5px', padding:'5px 7px', border: pwError ? '1px solid #c0392b' : '1px solid #ddd', borderRadius:'3px', outline:'none', color:'#333', background:'#fff', boxShadow:'0 4px 14px rgba(0,0,0,.08)' },
+      onPwKey: async (e)=>{
+        if(e.key==='Escape'){ this.setState({ pwOpen:false, pwError:false }); return; }
+        if(e.key!=='Enter') return;
+        const val = e.target.value;
+        const ok = await this.checkPassword(val);
+        if(ok){
+          try{ sessionStorage.setItem('pm_unlocked_v1','1'); }catch(_){}
+          this.setState({ unlocked:true, pwOpen:false, pwError:false });
+        } else {
+          e.target.value='';
+          this.setState({ pwError:true });
+        }
+      },
+      onPwBlur: ()=>{ this.setState({ pwOpen:false, pwError:false }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

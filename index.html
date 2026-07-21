@@ -181,23 +181,21 @@ class Component extends DCLogic {
     return Object.assign({ Authorization:'token '+this.state.ghToken, Accept:'application/vnd.github+json' }, extra||{});
   }
 
-  async ensureContentSha(){
-    if(this._contentShaLoaded) return;
+  async getContentSha(){
     const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${CONTENT_PATH}?ref=${GH_BRANCH}`, { headers: this.ghHeaders() });
-    if(res.status===404){ this._contentSha = null; }
-    else if(res.ok){ const j = await res.json(); this._contentSha = j.sha; }
-    else { throw new Error('could not read content.json ('+res.status+')'); }
-    this._contentShaLoaded = true;
+    if(res.status===404) return null;
+    if(!res.ok) throw new Error('could not read content.json ('+res.status+')');
+    const j = await res.json();
+    return j.sha;
   }
 
-  async publishContentNow(images, texts){
-    await this.ensureContentSha();
+  async publishContentNow(images, texts, isRetry){
+    const sha = await this.getContentSha();
     const body = { message:'Update portfolio content', content: b64EncodeUnicode(JSON.stringify({images,texts}, null, 2)), branch:GH_BRANCH };
-    if(this._contentSha) body.sha = this._contentSha;
+    if(sha) body.sha = sha;
     const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${CONTENT_PATH}`, { method:'PUT', headers:this.ghHeaders({'Content-Type':'application/json'}), body:JSON.stringify(body) });
+    if(res.status===409 && !isRetry) return this.publishContentNow(images, texts, true);
     if(!res.ok) throw new Error('publish failed ('+res.status+')');
-    const j = await res.json();
-    this._contentSha = j.content.sha;
   }
 
   async publishImageNow(path, dataUrl){

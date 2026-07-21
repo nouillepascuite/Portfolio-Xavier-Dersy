@@ -99,6 +99,19 @@ function b64EncodeUnicode(str){
   return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode('0x' + p1)));
 }
 
+async function mapLimit(items, limit, fn){
+  const results = new Array(items.length);
+  let i = 0;
+  async function worker(){
+    while(i < items.length){
+      const idx = i++;
+      results[idx] = await fn(items[idx], idx);
+    }
+  }
+  await Promise.all(Array.from({length: Math.min(limit, items.length)}, worker));
+  return results;
+}
+
 class Component extends DCLogic {
   state = { open:false, active:0, view:'t0', images:{}, texts:{}, localPreview:{}, unlocked:false, pwOpen:false, pwError:false, ghToken:'', tokenOpen:false, tokenError:false, publishing:false, publishError:'', mosaicWidth:0 };
   fileRef = React.createRef();
@@ -107,7 +120,7 @@ class Component extends DCLogic {
   pendingKey = null;
   _images = {};
   _texts = {};
-  _contentSha = undefined;
+  _pendingImages = {};
 
   componentDidMount(){
     this.loadContent();
@@ -184,53 +197,84 @@ class Component extends DCLogic {
     return Object.assign({ Authorization:'token '+this.state.ghToken, Accept:'application/vnd.github+json' }, extra||{});
   }
 
-  async getContentSha(){
-    const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${CONTENT_PATH}?ref=${GH_BRANCH}`, { headers: this.ghHeaders() });
-    if(res.status===404) return null;
-    if(!res.ok) throw new Error('could not read content.json ('+res.status+')');
+  async createBlob(base64Content){
+    const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/blobs`, { method:'POST', headers:this.ghHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ content: base64Content, encoding:'base64' }) });
+    if(!res.ok) throw new Error('blob create failed ('+res.status+')');
     const j = await res.json();
     return j.sha;
   }
 
-  async publishContentNow(images, texts){
-    const content = b64EncodeUnicode(JSON.stringify({images,texts}, null, 2));
-    const maxAttempts = 6;
-    for(let attempt=0; attempt<maxAttempts; attempt++){
-      // Trust the sha from our own last successful write — it's exact, unlike
-      // re-fetching via GET, which can briefly lag behind a write we just made.
-      // Only re-fetch when we don't have one yet, or a prior attempt conflicted.
-      if(this._contentSha===undefined || attempt>0){
-        if(attempt>0) await new Promise(r=>setTimeout(r, 400*attempt));
-        this._contentSha = await this.getContentSha();
-      }
-      const body = { message:'Update portfolio content', content, branch:GH_BRANCH };
-      if(this._contentSha) body.sha = this._contentSha;
-      const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${CONTENT_PATH}`, { method:'PUT', headers:this.ghHeaders({'Content-Type':'application/json'}), body:JSON.stringify(body) });
-      if(res.ok){ const j = await res.json(); this._contentSha = j.content.sha; return; }
-      if(res.status!==409) throw new Error('publish failed ('+res.status+')');
-    }
-    throw new Error('publish failed (409, retries exhausted)');
-  }
+  // Batches every pending image + the content.json update into a single atomic
+  // commit (blobs -> tree -> commit -> ref update) instead of one Contents-API
+  // write per file. This is what makes uploading to many tiles quick and
+  // reliable: one fast commit regardless of how many files changed, and no
+  // per-file sha races since only the branch ref itself can conflict.
+  async publishBatch(pendingImages, images, texts, isRetry){
+    const imagePaths = Object.keys(pendingImages);
+    const contentBase64 = b64EncodeUnicode(JSON.stringify({images,texts}, null, 2));
 
-  async publishImageNow(path, dataUrl){
-    const base64 = dataUrl.split(',')[1];
-    const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`, { method:'PUT', headers:this.ghHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ message:'Add image '+path, content: base64, branch:GH_BRANCH }) });
-    if(!res.ok) throw new Error('image upload failed ('+res.status+')');
+    const [imageBlobShas, contentBlobSha, branchRes] = await Promise.all([
+      mapLimit(imagePaths, 6, (path)=>this.createBlob(pendingImages[path])),
+      this.createBlob(contentBase64),
+      fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/branches/${GH_BRANCH}`, { headers: this.ghHeaders() })
+    ]);
+    if(!branchRes.ok) throw new Error('could not read branch ('+branchRes.status+')');
+    const branchInfo = await branchRes.json();
+    const baseCommitSha = branchInfo.commit.sha;
+    const baseTreeSha = branchInfo.commit.commit.tree.sha;
+
+    const treeEntries = imagePaths.map((path,i)=>({ path, mode:'100644', type:'blob', sha:imageBlobShas[i] }));
+    treeEntries.push({ path: CONTENT_PATH, mode:'100644', type:'blob', sha: contentBlobSha });
+
+    const treeRes = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/trees`, { method:'POST', headers:this.ghHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ base_tree: baseTreeSha, tree: treeEntries }) });
+    if(!treeRes.ok) throw new Error('tree create failed ('+treeRes.status+')');
+    const treeJson = await treeRes.json();
+
+    const commitRes = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/commits`, { method:'POST', headers:this.ghHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ message:'Publish portfolio updates', tree: treeJson.sha, parents:[baseCommitSha] }) });
+    if(!commitRes.ok) throw new Error('commit create failed ('+commitRes.status+')');
+    const commitJson = await commitRes.json();
+
+    const refRes = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/refs/heads/${GH_BRANCH}`, { method:'PATCH', headers:this.ghHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ sha: commitJson.sha }) });
+    if(refRes.status===422 && !isRetry){
+      // Branch moved since we read it (e.g. another tab published meanwhile) — reapply on the new head.
+      return this.publishBatch(pendingImages, images, texts, true);
+    }
+    if(!refRes.ok) throw new Error('publish failed ('+refRes.status+')');
   }
 
   queuePublish(task){
     this._publishQueue = (this._publishQueue || Promise.resolve())
-      .then(()=>{ this.setState({ publishing:true, publishError:'' }); return task(); })
+      .then(()=> task())
       .then(()=>{ this.setState({ publishing:false }); })
       .catch((err)=>{ this.setState({ publishing:false, publishError: (err && err.message) || 'publish failed' }); });
     return this._publishQueue;
   }
 
+  // Debounces publishes so a burst of edits (dropping images onto many tiles
+  // in quick succession) coalesces into one commit instead of one per edit.
+  scheduleFlush(){
+    this.setState({ publishing:true, publishError:'' });
+    clearTimeout(this._flushTimer);
+    this._flushTimer = setTimeout(()=>this.flushNow(), 1200);
+  }
+
+  flushNow(){
+    clearTimeout(this._flushTimer);
+    this._flushTimer = null;
+    const pendingImages = this._pendingImages;
+    this._pendingImages = {};
+    const images = this._images, texts = this._texts;
+    if(!Object.keys(pendingImages).length && !this._dirty){ this.setState({ publishing:false }); return; }
+    this._dirty = false;
+    this.queuePublish(()=>this.publishBatch(pendingImages, images, texts));
+  }
+
   saveText(key,val){
     if(!this.state.unlocked) return;
     this._texts = {...this._texts, [key]:val};
+    this._dirty = true;
     this.setState({ texts: this._texts });
-    this.queuePublish(()=>this.publishContentNow(this._images, this._texts));
+    this.scheduleFlush();
   }
 
   pickFor(key){ if(!this.state.unlocked) return; this.pendingKey=key; if(this.fileRef.current) this.fileRef.current.click(); }
@@ -238,11 +282,12 @@ class Component extends DCLogic {
   removeImage(key){
     if(!this.state.unlocked) return;
     this._images = {...this._images}; delete this._images[key];
+    this._dirty = true;
     this.setState(s=>{
       const localPreview={...s.localPreview}; delete localPreview[key];
       return { images: this._images, localPreview };
     });
-    this.queuePublish(()=>this.publishContentNow(this._images, this._texts));
+    this.scheduleFlush();
   }
 
   onFile(e){ if(!this.state.unlocked){ e.target.value=''; return; } const f=e.target.files && e.target.files[0]; if(f) this.loadFile(f, this.pendingKey, true); e.target.value=''; }
@@ -258,12 +303,10 @@ class Component extends DCLogic {
       });
       const ext = isGif ? 'gif' : 'jpg';
       const path = `images/${key}-${Date.now()}.${ext}`;
-      this.queuePublish(async ()=>{
-        await this.publishImageNow(path, dataUrl);
-        this._images = { ...this._images, [key]: path };
-        this.setState({ images: this._images });
-        await this.publishContentNow(this._images, this._texts);
-      });
+      this._pendingImages = { ...this._pendingImages, [path]: dataUrl.split(',')[1] };
+      this._images = { ...this._images, [key]: path };
+      this.setState({ images: this._images });
+      this.scheduleFlush();
     };
     if(isGif){ const r=new FileReader(); r.onload=e=>finish(e.target.result); r.readAsDataURL(file); return; }
     const r=new FileReader();
@@ -333,6 +376,7 @@ class Component extends DCLogic {
       lockClick: (e)=>{
         e.stopPropagation();
         if(this.state.unlocked){
+          if(this._flushTimer) this.flushNow();
           try{ sessionStorage.removeItem('pm_unlocked_v1'); }catch(_){}
           this.setState({ unlocked:false, pwOpen:false, pwError:false, tokenOpen:false, tokenError:false });
         } else {

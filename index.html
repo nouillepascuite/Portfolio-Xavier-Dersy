@@ -189,13 +189,19 @@ class Component extends DCLogic {
     return j.sha;
   }
 
-  async publishContentNow(images, texts, isRetry){
-    const sha = await this.getContentSha();
-    const body = { message:'Update portfolio content', content: b64EncodeUnicode(JSON.stringify({images,texts}, null, 2)), branch:GH_BRANCH };
-    if(sha) body.sha = sha;
-    const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${CONTENT_PATH}`, { method:'PUT', headers:this.ghHeaders({'Content-Type':'application/json'}), body:JSON.stringify(body) });
-    if(res.status===409 && !isRetry) return this.publishContentNow(images, texts, true);
-    if(!res.ok) throw new Error('publish failed ('+res.status+')');
+  async publishContentNow(images, texts){
+    const content = b64EncodeUnicode(JSON.stringify({images,texts}, null, 2));
+    const maxAttempts = 5;
+    for(let attempt=0; attempt<maxAttempts; attempt++){
+      if(attempt>0) await new Promise(r=>setTimeout(r, 350*attempt));
+      const sha = await this.getContentSha();
+      const body = { message:'Update portfolio content', content, branch:GH_BRANCH };
+      if(sha) body.sha = sha;
+      const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${CONTENT_PATH}`, { method:'PUT', headers:this.ghHeaders({'Content-Type':'application/json'}), body:JSON.stringify(body) });
+      if(res.ok) return;
+      if(res.status!==409) throw new Error('publish failed ('+res.status+')');
+    }
+    throw new Error('publish failed (409, retries exhausted)');
   }
 
   async publishImageNow(path, dataUrl){

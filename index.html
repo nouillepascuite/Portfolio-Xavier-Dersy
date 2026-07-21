@@ -107,6 +107,7 @@ class Component extends DCLogic {
   pendingKey = null;
   _images = {};
   _texts = {};
+  _contentSha = undefined;
 
   componentDidMount(){
     this.loadContent();
@@ -193,14 +194,19 @@ class Component extends DCLogic {
 
   async publishContentNow(images, texts){
     const content = b64EncodeUnicode(JSON.stringify({images,texts}, null, 2));
-    const maxAttempts = 5;
+    const maxAttempts = 6;
     for(let attempt=0; attempt<maxAttempts; attempt++){
-      if(attempt>0) await new Promise(r=>setTimeout(r, 350*attempt));
-      const sha = await this.getContentSha();
+      // Trust the sha from our own last successful write — it's exact, unlike
+      // re-fetching via GET, which can briefly lag behind a write we just made.
+      // Only re-fetch when we don't have one yet, or a prior attempt conflicted.
+      if(this._contentSha===undefined || attempt>0){
+        if(attempt>0) await new Promise(r=>setTimeout(r, 400*attempt));
+        this._contentSha = await this.getContentSha();
+      }
       const body = { message:'Update portfolio content', content, branch:GH_BRANCH };
-      if(sha) body.sha = sha;
+      if(this._contentSha) body.sha = this._contentSha;
       const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${CONTENT_PATH}`, { method:'PUT', headers:this.ghHeaders({'Content-Type':'application/json'}), body:JSON.stringify(body) });
-      if(res.ok) return;
+      if(res.ok){ const j = await res.json(); this._contentSha = j.content.sha; return; }
       if(res.status!==409) throw new Error('publish failed ('+res.status+')');
     }
     throw new Error('publish failed (409, retries exhausted)');

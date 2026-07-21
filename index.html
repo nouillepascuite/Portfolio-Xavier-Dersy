@@ -105,6 +105,8 @@ class Component extends DCLogic {
   pwWrapRef = React.createRef();
   gridRef = React.createRef();
   pendingKey = null;
+  _images = {};
+  _texts = {};
 
   componentDidMount(){
     this.loadContent();
@@ -131,7 +133,7 @@ class Component extends DCLogic {
   }
 
   loadContent(){
-    const apply = (txt)=>{ try{ const j = JSON.parse(txt); this.setState({ images: j.images||{}, texts: j.texts||{} }); }catch(_){} };
+    const apply = (txt)=>{ try{ const j = JSON.parse(txt); this._images = j.images||{}; this._texts = j.texts||{}; this.setState({ images: this._images, texts: this._texts }); }catch(_){} };
     fetch('content.json')
       .then(r=> r.ok ? r.text() : Promise.reject())
       .then(apply)
@@ -220,23 +222,21 @@ class Component extends DCLogic {
 
   saveText(key,val){
     if(!this.state.unlocked) return;
-    this.setState(s=>{
-      const texts={...s.texts,[key]:val};
-      this.queuePublish(()=>this.publishContentNow(s.images, texts));
-      return {texts};
-    });
+    this._texts = {...this._texts, [key]:val};
+    this.setState({ texts: this._texts });
+    this.queuePublish(()=>this.publishContentNow(this._images, this._texts));
   }
 
   pickFor(key){ if(!this.state.unlocked) return; this.pendingKey=key; if(this.fileRef.current) this.fileRef.current.click(); }
 
   removeImage(key){
     if(!this.state.unlocked) return;
+    this._images = {...this._images}; delete this._images[key];
     this.setState(s=>{
-      const images={...s.images}; delete images[key];
       const localPreview={...s.localPreview}; delete localPreview[key];
-      this.queuePublish(()=>this.publishContentNow(images, s.texts));
-      return { images, localPreview };
+      return { images: this._images, localPreview };
     });
+    this.queuePublish(()=>this.publishContentNow(this._images, this._texts));
   }
 
   onFile(e){ if(!this.state.unlocked){ e.target.value=''; return; } const f=e.target.files && e.target.files[0]; if(f) this.loadFile(f, this.pendingKey, true); e.target.value=''; }
@@ -254,9 +254,9 @@ class Component extends DCLogic {
       const path = `images/${key}-${Date.now()}.${ext}`;
       this.queuePublish(async ()=>{
         await this.publishImageNow(path, dataUrl);
-        const images = { ...this.state.images, [key]: path };
-        await this.publishContentNow(images, this.state.texts);
-        this.setState({ images });
+        this._images = { ...this._images, [key]: path };
+        this.setState({ images: this._images });
+        await this.publishContentNow(this._images, this._texts);
       });
     };
     if(isGif){ const r=new FileReader(); r.onload=e=>finish(e.target.result); r.readAsDataURL(file); return; }

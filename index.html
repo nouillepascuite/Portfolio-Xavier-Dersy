@@ -23,12 +23,20 @@
     <div style="{{ headerInnerStyle }}">
       <h1 style="margin: 0; font-size: 20px; font-weight: normal; letter-spacing: .2px; font-family: Roboto">Xavier Dersy</h1>
       <div style="position:relative;" ref="{{ pwWrapRef }}">
-        <span onClick="{{ lockClick }}" title="{{ lockHint }}" style="{{ lockStyle }}" style-hover="{{ lockHoverStyle }}">
-          <div style="{{ lockShackleStyle }}"></div>
-          <div style="{{ lockBodyStyle }}"></div>
-        </span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <sc-if value="{{ showStatus }}" hint-placeholder-val="{{ false }}">
+            <span title="{{ statusTitle }}" style="{{ statusStyle }}">{{ statusText }}</span>
+          </sc-if>
+          <span onClick="{{ lockClick }}" title="{{ lockHint }}" style="{{ lockStyle }}" style-hover="{{ lockHoverStyle }}">
+            <div style="{{ lockShackleStyle }}"></div>
+            <div style="{{ lockBodyStyle }}"></div>
+          </span>
+        </div>
         <sc-if value="{{ pwOpen }}" hint-placeholder-val="{{ false }}">
-          <input type="password" autoFocus="{{ true }}" onKeyDown="{{ onPwKey }}" onBlur="{{ onPwBlur }}" placeholder="{{ pwPlaceholder }}" style="{{ pwInputStyle }}" />
+          <input type="password" autoFocus="{{ true }}" onKeyDown="{{ onPwKey }}" placeholder="{{ pwPlaceholder }}" style="{{ pwInputStyle }}" />
+        </sc-if>
+        <sc-if value="{{ tokenOpen }}" hint-placeholder-val="{{ false }}">
+          <input type="password" autoFocus="{{ true }}" onKeyDown="{{ onTokenKey }}" placeholder="{{ tokenPlaceholder }}" style="{{ pwInputStyle }}" />
         </sc-if>
       </div>
     </div>
@@ -82,20 +90,27 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#111111&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#1a44cc&quot;,&quot;#111111&quot;,&quot;#b0451f&quot;,&quot;#2f7d4f&quot;]},&quot;showTileNumbers&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
 const PW_HASH = '7b653a62faee3d451d20a3c84a5737c5f2d6f2a60d027fc5c6cd014d2a3f396c';
+const GH_OWNER = 'nouillepascuite';
+const GH_REPO = 'Portfolio-Xavier-Dersy';
+const GH_BRANCH = 'main';
+const CONTENT_PATH = 'content.json';
+
+function b64EncodeUnicode(str){
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode('0x' + p1)));
+}
 
 class Component extends DCLogic {
-  state = { open:false, active:0, view:'t0', images:{}, texts:{}, unlocked:false, pwOpen:false, pwError:false, mosaicWidth:0 };
+  state = { open:false, active:0, view:'t0', images:{}, texts:{}, localPreview:{}, unlocked:false, pwOpen:false, pwError:false, ghToken:'', tokenOpen:false, tokenError:false, publishing:false, publishError:'', mosaicWidth:0 };
   fileRef = React.createRef();
   pwWrapRef = React.createRef();
   gridRef = React.createRef();
   pendingKey = null;
 
   componentDidMount(){
-    let images={}, texts={}, unlocked=false;
-    try{ images = JSON.parse(localStorage.getItem('pm_images_v1')) || {}; }catch(_){}
-    try{ texts = JSON.parse(localStorage.getItem('pm_texts_v1')) || {}; }catch(_){}
-    try{ unlocked = sessionStorage.getItem('pm_unlocked_v1')==='1'; }catch(_){}
-    this.setState({ images, texts, unlocked });
+    this.loadContent();
+    let ghToken=''; try{ ghToken = sessionStorage.getItem('pm_gh_token_v1') || ''; }catch(_){}
+    let unlocked=false; try{ unlocked = sessionStorage.getItem('pm_unlocked_v1')==='1' && !!ghToken; }catch(_){}
+    this.setState({ ghToken, unlocked });
     this._key = this.onKey.bind(this);
     window.addEventListener('keydown', this._key);
     this._outsideClick = this.onOutsideClick.bind(this);
@@ -115,10 +130,23 @@ class Component extends DCLogic {
     if(this._ro) this._ro.disconnect();
   }
 
+  loadContent(){
+    const apply = (txt)=>{ try{ const j = JSON.parse(txt); this.setState({ images: j.images||{}, texts: j.texts||{} }); }catch(_){} };
+    fetch('content.json')
+      .then(r=> r.ok ? r.text() : Promise.reject())
+      .then(apply)
+      .catch(()=>{
+        fetch(`https://${GH_OWNER}.github.io/${GH_REPO}/content.json`)
+          .then(r=> r.ok ? r.text() : Promise.reject())
+          .then(apply)
+          .catch(()=>{});
+      });
+  }
+
   onOutsideClick(e){
-    if(!this.state.pwOpen) return;
+    if(!this.state.pwOpen && !this.state.tokenOpen) return;
     if(this.pwWrapRef.current && this.pwWrapRef.current.contains(e.target)) return;
-    this.setState({ pwOpen:false, pwError:false });
+    this.setState({ pwOpen:false, pwError:false, tokenOpen:false, tokenError:false });
   }
 
   async checkPassword(pw){
@@ -126,6 +154,15 @@ class Component extends DCLogic {
       const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
       const hex = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
       return hex === PW_HASH;
+    }catch(_){ return false; }
+  }
+
+  async verifyToken(token){
+    try{
+      const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}`, { headers:{ Authorization:'token '+token, Accept:'application/vnd.github+json' } });
+      if(!res.ok) return false;
+      const j = await res.json();
+      return !!(j.permissions && j.permissions.push);
     }catch(_){ return false; }
   }
 
@@ -140,37 +177,104 @@ class Component extends DCLogic {
   go(d){ this.setState(s=>{ const n=(s.active+d+50)%50; return { active:n, view:'t'+n }; }); }
   openAt(n){ this.setState({ open:true, active:n, view:'t'+n }); }
 
-  persistImages(images){ try{ localStorage.setItem('pm_images_v1', JSON.stringify(images)); }catch(err){ console.warn('image storage full — image kept in memory only', err); } }
-  persistTexts(texts){ try{ localStorage.setItem('pm_texts_v1', JSON.stringify(texts)); }catch(err){ console.warn(err); } }
-  saveText(key,val){ if(!this.state.unlocked) return; this.setState(s=>{ const texts={...s.texts,[key]:val}; this.persistTexts(texts); return {texts}; }); }
+  ghHeaders(extra){
+    return Object.assign({ Authorization:'token '+this.state.ghToken, Accept:'application/vnd.github+json' }, extra||{});
+  }
+
+  async ensureContentSha(){
+    if(this._contentShaLoaded) return;
+    const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${CONTENT_PATH}?ref=${GH_BRANCH}`, { headers: this.ghHeaders() });
+    if(res.status===404){ this._contentSha = null; }
+    else if(res.ok){ const j = await res.json(); this._contentSha = j.sha; }
+    else { throw new Error('could not read content.json ('+res.status+')'); }
+    this._contentShaLoaded = true;
+  }
+
+  async publishContentNow(images, texts){
+    await this.ensureContentSha();
+    const body = { message:'Update portfolio content', content: b64EncodeUnicode(JSON.stringify({images,texts}, null, 2)), branch:GH_BRANCH };
+    if(this._contentSha) body.sha = this._contentSha;
+    const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${CONTENT_PATH}`, { method:'PUT', headers:this.ghHeaders({'Content-Type':'application/json'}), body:JSON.stringify(body) });
+    if(!res.ok) throw new Error('publish failed ('+res.status+')');
+    const j = await res.json();
+    this._contentSha = j.content.sha;
+  }
+
+  async publishImageNow(path, dataUrl){
+    const base64 = dataUrl.split(',')[1];
+    const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`, { method:'PUT', headers:this.ghHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ message:'Add image '+path, content: base64, branch:GH_BRANCH }) });
+    if(!res.ok) throw new Error('image upload failed ('+res.status+')');
+  }
+
+  queuePublish(task){
+    this._publishQueue = (this._publishQueue || Promise.resolve())
+      .then(()=>{ this.setState({ publishing:true, publishError:'' }); return task(); })
+      .then(()=>{ this.setState({ publishing:false }); })
+      .catch((err)=>{ this.setState({ publishing:false, publishError: (err && err.message) || 'publish failed' }); });
+    return this._publishQueue;
+  }
+
+  saveText(key,val){
+    if(!this.state.unlocked) return;
+    this.setState(s=>{
+      const texts={...s.texts,[key]:val};
+      this.queuePublish(()=>this.publishContentNow(s.images, texts));
+      return {texts};
+    });
+  }
 
   pickFor(key){ if(!this.state.unlocked) return; this.pendingKey=key; if(this.fileRef.current) this.fileRef.current.click(); }
-  removeImage(key){ if(!this.state.unlocked) return; this.setState(s=>{ const images={...s.images}; delete images[key]; this.persistImages(images); return {images}; }); }
+
+  removeImage(key){
+    if(!this.state.unlocked) return;
+    this.setState(s=>{
+      const images={...s.images}; delete images[key];
+      const localPreview={...s.localPreview}; delete localPreview[key];
+      this.queuePublish(()=>this.publishContentNow(images, s.texts));
+      return { images, localPreview };
+    });
+  }
+
   onFile(e){ if(!this.state.unlocked){ e.target.value=''; return; } const f=e.target.files && e.target.files[0]; if(f) this.loadFile(f, this.pendingKey, true); e.target.value=''; }
   onDropKey(key,e,setView){ e.preventDefault(); if(!this.state.unlocked) return; const f=e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if(f) this.loadFile(f, key, setView); }
 
   loadFile(file, key, setView){
     if(!key) return;
-    const done=(data)=>{ this.setState(s=>{ const images={...s.images,[key]:data}; this.persistImages(images); return setView?{images,view:key}:{images}; }); };
-    if(file.type==='image/gif'){ const r=new FileReader(); r.onload=e=>done(e.target.result); r.readAsDataURL(file); return; }
+    const isGif = file.type==='image/gif';
+    const finish=(dataUrl)=>{
+      this.setState(s=>{
+        const localPreview = {...s.localPreview, [key]:dataUrl};
+        return setView ? { localPreview, view:key } : { localPreview };
+      });
+      const ext = isGif ? 'gif' : 'jpg';
+      const path = `images/${key}-${Date.now()}.${ext}`;
+      this.queuePublish(async ()=>{
+        await this.publishImageNow(path, dataUrl);
+        const images = { ...this.state.images, [key]: path };
+        await this.publishContentNow(images, this.state.texts);
+        this.setState({ images });
+      });
+    };
+    if(isGif){ const r=new FileReader(); r.onload=e=>finish(e.target.result); r.readAsDataURL(file); return; }
     const r=new FileReader();
-    r.onload=e=>{ const img=new Image(); img.onload=()=>{ const max=760; const sc=Math.min(1, max/Math.max(img.width,img.height)); const w=Math.max(1,Math.round(img.width*sc)), h=Math.max(1,Math.round(img.height*sc)); const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); let data; try{ data=c.toDataURL('image/jpeg',0.82); }catch(_){ data=e.target.result; } done(data); }; img.onerror=()=>done(e.target.result); img.src=e.target.result; };
+    r.onload=e=>{ const img=new Image(); img.onload=()=>{ const max=760; const sc=Math.min(1, max/Math.max(img.width,img.height)); const w=Math.max(1,Math.round(img.width*sc)), h=Math.max(1,Math.round(img.height*sc)); const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); let data; try{ data=c.toDataURL('image/jpeg',0.82); }catch(_){ data=e.target.result; } finish(data); }; img.onerror=()=>finish(e.target.result); img.src=e.target.result; };
     r.readAsDataURL(file);
   }
 
   renderVals(){
-    const { images, texts, open, active, view, unlocked, pwOpen, pwError, mosaicWidth } = this.state;
+    const { images, texts, localPreview, open, active, view, unlocked, pwOpen, pwError, ghToken, tokenOpen, tokenError, publishing, publishError, mosaicWidth } = this.state;
     const accent = this.props.accentColor || '#1a44cc';
     const showNums = this.props.showTileNumbers !== false;
     const esc=(t)=>(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    const srcFor=(k)=> localPreview[k] || images[k];
 
     const tiles = Array.from({length:50},(_,i)=>{
-      const key='t'+i; const img=images[key]; const label=String(i+1).padStart(2,'0');
+      const key='t'+i; const src=srcFor(key); const label=String(i+1).padStart(2,'0');
       return {
         label: showNums ? label : '',
-        hint: 'Project '+label+(img?'':' — drop an image or click to open'),
+        hint: 'Project '+label+(src?'':' — drop an image or click to open'),
         numStyle: { fontFamily:"'Courier New',monospace", fontSize:'11px', color:'#cccccc' },
-        bg: img ? { position:'absolute', inset:0, backgroundImage:`url(${img})`, backgroundSize:'cover', backgroundPosition:'center' } : { display:'none' },
+        bg: src ? { position:'absolute', inset:0, backgroundImage:`url(${src})`, backgroundSize:'cover', backgroundPosition:'center' } : { display:'none' },
         hover: { boxShadow:`inset 0 0 0 2px ${accent}`, zIndex:2 },
         open: ()=>this.openAt(i),
         onDrop: (e)=>this.onDropKey(key,e,false)
@@ -179,13 +283,13 @@ class Component extends DCLogic {
 
     const n=active;
     const orderKeys=['t'+n,'g'+n+'-0','g'+n+'-1','g'+n+'-2','g'+n+'-3','g'+n+'-4'];
-    const photos=orderKeys.filter(k=>images[k]).map(k=>({
-      style: { width:'100%', height:'46vh', minHeight:'220px', maxHeight:'70vh', backgroundImage:`url(${images[k]})`, backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', backgroundColor:'#fafafa', borderRadius:'5px' },
+    const photos=orderKeys.filter(k=>srcFor(k)).map(k=>({
+      style: { width:'100%', height:'46vh', minHeight:'220px', maxHeight:'70vh', backgroundImage:`url(${srcFor(k)})`, backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', backgroundColor:'#fafafa', borderRadius:'5px' },
       onDrop:(e)=>this.onDropKey(k,e,false),
       remove:(e)=>{ if(e)e.stopPropagation(); this.removeImage(k); },
       removeStyle: unlocked ? { position:'absolute', top:'10px', right:'10px', background:'rgba(255,255,255,.92)', borderRadius:'4px', padding:'3px 9px', fontFamily:"'Courier New',monospace", fontSize:'10px', letterSpacing:'.5px', color:'#555', cursor:'pointer' } : { display:'none' }
     }));
-    const firstEmpty=orderKeys.find(k=>!images[k]);
+    const firstEmpty=orderKeys.find(k=>!srcFor(k));
 
     return {
       tiles, open, unlocked,
@@ -220,28 +324,50 @@ class Component extends DCLogic {
         e.stopPropagation();
         if(this.state.unlocked){
           try{ sessionStorage.removeItem('pm_unlocked_v1'); }catch(_){}
-          this.setState({ unlocked:false, pwOpen:false, pwError:false });
+          this.setState({ unlocked:false, pwOpen:false, pwError:false, tokenOpen:false, tokenError:false });
         } else {
           this.setState({ pwOpen:true, pwError:false });
         }
       },
+
       pwOpen,
       pwPlaceholder: pwError ? 'wrong' : 'password',
-      pwInputStyle: { position:'absolute', top:'26px', right:0, zIndex:50, width:'104px', fontSize:'11px', fontFamily:"'Courier New',monospace", letterSpacing:'.5px', padding:'5px 7px', border: pwError ? '1px solid #c0392b' : '1px solid #ddd', borderRadius:'3px', outline:'none', color:'#333', background:'#fff', boxShadow:'0 4px 14px rgba(0,0,0,.08)' },
+      pwInputStyle: { position:'absolute', top:'26px', right:0, zIndex:50, width:'140px', fontSize:'11px', fontFamily:"'Courier New',monospace", letterSpacing:'.5px', padding:'5px 7px', border: (pwError||tokenError) ? '1px solid #c0392b' : '1px solid #ddd', borderRadius:'3px', outline:'none', color:'#333', background:'#fff', boxShadow:'0 4px 14px rgba(0,0,0,.08)' },
       onPwKey: async (e)=>{
         if(e.key==='Escape'){ this.setState({ pwOpen:false, pwError:false }); return; }
         if(e.key!=='Enter') return;
         const val = e.target.value;
         const ok = await this.checkPassword(val);
-        if(ok){
+        if(!ok){ e.target.value=''; this.setState({ pwError:true }); return; }
+        if(this.state.ghToken){
+          this.setState({ pwOpen:false, pwError:false, unlocked:true });
           try{ sessionStorage.setItem('pm_unlocked_v1','1'); }catch(_){}
-          this.setState({ unlocked:true, pwOpen:false, pwError:false });
         } else {
-          e.target.value='';
-          this.setState({ pwError:true });
+          this.setState({ pwOpen:false, pwError:false, tokenOpen:true, tokenError:false });
         }
       },
-      onPwBlur: ()=>{ this.setState({ pwOpen:false, pwError:false }); }
+
+      tokenOpen,
+      tokenPlaceholder: tokenError ? 'invalid token' : 'github token',
+      onTokenKey: async (e)=>{
+        if(e.key==='Escape'){ this.setState({ tokenOpen:false, tokenError:false }); return; }
+        if(e.key!=='Enter') return;
+        const val = e.target.value.trim();
+        if(!val) return;
+        const ok = await this.verifyToken(val);
+        if(ok){
+          try{ sessionStorage.setItem('pm_gh_token_v1', val); sessionStorage.setItem('pm_unlocked_v1','1'); }catch(_){}
+          this.setState({ ghToken:val, tokenOpen:false, tokenError:false, unlocked:true });
+        } else {
+          e.target.value='';
+          this.setState({ tokenError:true });
+        }
+      },
+
+      showStatus: unlocked && (publishing || !!publishError),
+      statusText: publishing ? 'saving…' : (publishError ? 'error' : ''),
+      statusTitle: publishError || '',
+      statusStyle: { fontSize:'10px', fontFamily:"'Courier New',monospace", letterSpacing:'.5px', color: publishError ? '#c0392b' : '#999999' }
     };
   }
 }

@@ -45,8 +45,8 @@
     </div>
   </div>
 
-  <div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:16px;">
-    <div ref="{{ gridRef }}" style="display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(1,1fr);gap:6px;height:100%;aspect-ratio:10;max-width:100%;">
+  <div ref="{{ containerRef }}" style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:16px;">
+    <div ref="{{ gridRef }}" style="{{ gridStyle }}">
       <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="10">
         <div onClick="{{ t.open }}" onDrop="{{ t.onDrop }}" onDragOver="{{ allowDrop }}" title="{{ t.hint }}" style="position:relative;background:#fff;border:1px solid #e2e2e2;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;" style-hover="{{ t.hover }}">
           <span style="{{ t.numStyle }}">{{ t.label }}</span>
@@ -116,10 +116,11 @@ async function mapLimit(items, limit, fn){
 }
 
 class Component extends DCLogic {
-  state = { open:false, active:0, view:'t0', images:{}, texts:{}, localPreview:{}, unlocked:false, pwOpen:false, pwError:false, ghToken:'', tokenOpen:false, tokenError:false, publishing:false, publishError:'', mosaicWidth:0 };
+  state = { open:false, active:0, view:'t0', images:{}, texts:{}, localPreview:{}, unlocked:false, pwOpen:false, pwError:false, ghToken:'', tokenOpen:false, tokenError:false, publishing:false, publishError:'', mosaicWidth:0, gridCols:5, tileSize:120 };
   fileRef = React.createRef();
   pwWrapRef = React.createRef();
   gridRef = React.createRef();
+  containerRef = React.createRef();
   pendingKey = null;
   _images = {};
   _texts = {};
@@ -142,11 +143,33 @@ class Component extends DCLogic {
       });
       this._ro.observe(this.gridRef.current);
     }
+    if(this.containerRef.current && typeof ResizeObserver!=='undefined'){
+      this._fitRo = new ResizeObserver((entries)=>{
+        const box = entries[0] && entries[0].contentRect;
+        if(!box) return;
+        const { cols, tileSize } = this.fitTiles(box.width, box.height, 10, 6);
+        this.setState({ gridCols: cols, tileSize });
+      });
+      this._fitRo.observe(this.containerRef.current);
+    }
   }
   componentWillUnmount(){
     window.removeEventListener('keydown', this._key);
     document.removeEventListener('mousedown', this._outsideClick);
     if(this._ro) this._ro.disconnect();
+    if(this._fitRo) this._fitRo.disconnect();
+  }
+
+  // Picks the column count (1..n) that lets n square tiles fill the
+  // available box as large as possible, given the last row may be partial.
+  fitTiles(w, h, n, gap){
+    let best = { cols:1, tileSize:0 };
+    for(let cols=1; cols<=n; cols++){
+      const rows = Math.ceil(n/cols);
+      const size = Math.min((w-gap*(cols-1))/cols, (h-gap*(rows-1))/rows);
+      if(size > best.tileSize) best = { cols, tileSize:size };
+    }
+    return { cols: best.cols, tileSize: Math.max(0, Math.floor(best.tileSize)) };
   }
 
   loadContent(){
@@ -318,7 +341,7 @@ class Component extends DCLogic {
   }
 
   renderVals(){
-    const { images, texts, localPreview, open, active, view, unlocked, pwOpen, pwError, ghToken, tokenOpen, tokenError, publishing, publishError, mosaicWidth } = this.state;
+    const { images, texts, localPreview, open, active, view, unlocked, pwOpen, pwError, ghToken, tokenOpen, tokenError, publishing, publishError, mosaicWidth, gridCols, tileSize } = this.state;
     const accent = this.props.accentColor || '#1a44cc';
     const showNums = this.props.showTileNumbers !== false;
     const esc=(t)=>(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
@@ -365,6 +388,8 @@ class Component extends DCLogic {
       onFile:(e)=>this.onFile(e),
       pwWrapRef:this.pwWrapRef,
       gridRef:this.gridRef,
+      containerRef:this.containerRef,
+      gridStyle: { display:'grid', gridTemplateColumns:`repeat(${gridCols},${tileSize}px)`, gridAutoRows:`${tileSize}px`, gap:'6px' },
       headerInnerStyle: { width: mosaicWidth ? mosaicWidth+'px' : 'auto', display:'flex', alignItems:'baseline', justifyContent:'space-between' },
       close:(e)=>{ if(e)e.stopPropagation(); this.setState({open:false}); },
       stop:(e)=>e.stopPropagation(),

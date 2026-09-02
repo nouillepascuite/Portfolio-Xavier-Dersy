@@ -46,8 +46,8 @@
   </div>
 
   <div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:16px;">
-    <div ref="{{ gridRef }}" style="display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr);gap:6px;height:100%;aspect-ratio:1;max-width:100%;">
-      <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="100">
+    <div ref="{{ gridRef }}" style="display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(1,1fr);gap:6px;height:100%;aspect-ratio:10;max-width:100%;">
+      <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="10">
         <div onClick="{{ t.open }}" onDrop="{{ t.onDrop }}" onDragOver="{{ allowDrop }}" title="{{ t.hint }}" style="position:relative;background:#fff;border:1px solid #e2e2e2;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;" style-hover="{{ t.hover }}">
           <span style="{{ t.numStyle }}">{{ t.label }}</span>
           <div style="{{ t.bg }}"></div>
@@ -63,7 +63,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;">
           <div style="display:flex;align-items:center;gap:16px;font-family:'Courier New',monospace;font-size:11px;letter-spacing:1.5px;color:#a6a6a6;">
             <span onClick="{{ prev }}" style="cursor:pointer;font-size:15px;">←</span>
-            <span>{{ activeLabel }} / 100</span>
+            <span>{{ activeLabel }} / 10</span>
             <span onClick="{{ next }}" style="cursor:pointer;font-size:15px;">→</span>
           </div>
           <span onClick="{{ close }}" style="cursor:pointer;font-size:22px;line-height:1;color:#9a9a9a;">×</span>
@@ -193,7 +193,7 @@ class Component extends DCLogic {
     else if(e.key==='ArrowRight') this.go(1);
   }
 
-  go(d){ this.setState(s=>{ const n=(s.active+d+100)%100; return { active:n, view:'t'+n }; }); }
+  go(d){ this.setState(s=>{ const n=(s.active+d+10)%10; return { active:n, view:'t'+n }; }); }
   openAt(n){ this.setState({ open:true, active:n, view:'t'+n }); }
 
   ghHeaders(extra){
@@ -324,7 +324,7 @@ class Component extends DCLogic {
     const esc=(t)=>(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
     const srcFor=(k)=> localPreview[k] || images[k];
 
-    const tiles = Array.from({length:100},(_,i)=>{
+    const tiles = Array.from({length:10},(_,i)=>{
       const key='t'+i; const src=srcFor(key); const label=String(i+1).padStart(2,'0');
       return {
         label: showNums ? label : '',

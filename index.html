@@ -95,6 +95,9 @@
     -webkit-overflow-scrolling:touch;
     scrollbar-width:thin;
   }
+  /* Timing/curve fitted against the reference site's actual measured hover
+     motion (sampled via a real browser, not guessed from source) — a smooth
+     asymptotic ease with no overshoot. */
   .card{
     flex:none;
     width:var(--item-width);
@@ -102,27 +105,28 @@
     display:flex; flex-direction:column;
     cursor:pointer;
     border:0; background:none; padding:0; text-align:left; font:inherit; color:inherit;
+    transition:transform .63s cubic-bezier(.39,.575,.565,1);
   }
+  .card:hover, .card:focus-visible{ transform:translateY(-10px); }
   .card-media-wrap{ position:relative; margin-bottom:1.1rem; }
   .card-media{
     position:relative; z-index:1;
     width:100%; height:calc(var(--item-height) - 4.75rem); border-radius:14px;
     display:flex; align-items:center; justify-content:center; overflow:hidden;
-    transition:transform .6s cubic-bezier(.22,.61,.36,1);
   }
   .card-media svg{ width:62%; height:62%; }
-  /* Layered shadow: a big soft one blooms in from a tucked-in scale, plus a
-     tight close one always faintly present — gives the "lifting off the
-     page" feel on hover instead of a single flat box-shadow. */
+  /* Layered shadow: the wide soft one is only faintly visible at rest and
+     blooms to near-full strength on hover; the tight close one is fully
+     invisible at rest and only partly appears on hover — together they read
+     as the card lifting just barely off the page until you engage it. */
   .card-shadow-far, .card-shadow-near{
     content:''; position:absolute; inset:0; border-radius:14px;
-    transition:opacity .6s cubic-bezier(.22,.61,.36,1), transform .6s cubic-bezier(.22,.61,.36,1);
+    transition:opacity .63s cubic-bezier(.39,.575,.565,1), transform .63s cubic-bezier(.39,.575,.565,1);
   }
-  .card-shadow-far{ box-shadow:-18px 26px 30px 4px rgba(0,0,0,.16); opacity:0; transform:scale(.8); transform-origin:top right; }
-  .card-shadow-near{ box-shadow:0 10px 22px -8px rgba(0,0,0,.22); opacity:1; }
-  .card:hover .card-media, .card:focus-visible .card-media{ transform:translateY(-8px); }
-  .card:hover .card-shadow-far, .card:focus-visible .card-shadow-far{ opacity:.55; transform:none; }
-  .card:hover .card-shadow-near, .card:focus-visible .card-shadow-near{ opacity:1; transform:translateY(-8px); }
+  .card-shadow-far{ box-shadow:-18px 26px 30px 4px rgba(0,0,0,.2); opacity:.1; transform:scale(.8); transform-origin:top right; }
+  .card-shadow-near{ box-shadow:0 10px 22px -8px rgba(0,0,0,.28); opacity:0; }
+  .card:hover .card-shadow-far, .card:focus-visible .card-shadow-far{ opacity:.9; transform:none; }
+  .card:hover .card-shadow-near, .card:focus-visible .card-shadow-near{ opacity:.5; }
   .card-title{ font-size:.95rem; text-transform:uppercase; letter-spacing:.03em; margin-bottom:.35rem; }
   .card-teaser{ font-size:.85rem; opacity:.65; }
 

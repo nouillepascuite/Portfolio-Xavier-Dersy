@@ -1,458 +1,231 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xavier Dersy — Portfolio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-<script src="./support.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rammetto+One&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --item-width: 13.25rem;
+    --item-height: 19rem;
+    --content-max: 60rem;
+  }
+  @media screen and (min-width:768px){
+    :root{ --item-width: 17.8rem; --item-height: 24rem; }
+  }
+  *,*:before,*:after{ box-sizing:border-box; }
+  html{
+    background:#333;
+    min-height:100vh;
+  }
+  body{
+    margin:0;
+    background:#fff;
+    color:#333;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    letter-spacing:-.4px;
+    line-height:1.35;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-color-scheme:dark){
+    body{ background:#333; color:#fff; }
+    .social-anchor{ background:#fff; color:#333; }
+    .back-btn{ background:#fff; color:#333; }
+  }
+  ::selection{ background:#333; color:#fff; }
+  @media (prefers-color-scheme:dark){ ::selection{ background:#fff; color:#333; } }
+  a{ color:inherit; text-decoration:none; }
+  .link{ background-image:linear-gradient(currentColor,currentColor); background-position:0 1.2em; background-repeat:no-repeat; background-size:100% 2px; padding-bottom:2px; }
+  .link:hover,.link:focus{ background-size:100% 3px; }
+
+  .container{ max-width:var(--content-max); margin:0 auto; padding:4rem 1.5rem; }
+  @media screen and (min-width:768px){ .container{ padding:5rem 3rem; } }
+
+  .name{ font-family:'Rammetto One',cursive; font-weight:400; font-size:2.25rem; margin:0 0 1.25rem; }
+  @media screen and (min-width:768px){ .name{ font-size:3rem; } }
+
+  .intro{ max-width:40ch; margin:0 0 2.5rem; padding-right:1rem; }
+
+  .social-links{ display:flex; gap:.9rem; margin-bottom:3.5rem; }
+  .social-anchor{
+    width:2.5rem; height:2.5rem; border-radius:50%;
+    background:#333; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .15s ease;
+  }
+  .social-anchor:hover{ transform:translateY(-2px); }
+  .social-anchor svg{ width:1.2rem; height:1.2rem; fill:currentColor; }
+
+  .sub-heading{ font-family:'Rammetto One',cursive; font-weight:400; font-size:1.15rem; margin:0 0 1.5rem; }
+
+  .cards{
+    display:flex; gap:2rem;
+    overflow-x:auto; overflow-y:hidden;
+    padding:.5rem .1rem 1.5rem;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+  }
+  .card{
+    flex:none;
+    width:var(--item-width);
+    display:flex; flex-direction:column;
+    cursor:pointer;
+    border:0; background:none; padding:0; text-align:left; font:inherit; color:inherit;
+  }
+  .card-media{
+    width:100%; height:var(--item-width); border-radius:14px; margin-bottom:1.1rem;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    box-shadow:0 10px 24px -6px rgba(0,0,0,.18);
+    transition:transform .22s ease, box-shadow .22s ease;
+  }
+  .card-media svg{ width:62%; height:62%; }
+  .card:hover .card-media, .card:focus-visible .card-media{
+    transform:translateY(-6px);
+    box-shadow:0 22px 34px -10px rgba(0,0,0,.28);
+  }
+  .card-title{ font-size:.95rem; text-transform:uppercase; letter-spacing:.03em; margin-bottom:.35rem; }
+  .card-teaser{ font-size:.85rem; opacity:.65; }
+
+  .detail{ display:none; }
+  .detail.is-active{ display:block; }
+  .home.is-hidden{ display:none; }
+
+  .back-btn{
+    width:2.5rem; height:2.5rem; border-radius:50%;
+    background:#333; color:#fff; border:0; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:2.5rem;
+  }
+  .back-btn svg{ width:1.1rem; height:1.1rem; fill:currentColor; }
+
+  .detail-media{
+    width:6.5rem; height:6.5rem; border-radius:16px; margin-bottom:1.75rem;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    box-shadow:0 10px 24px -6px rgba(0,0,0,.18);
+  }
+  .detail-media svg{ width:62%; height:62%; }
+  .detail-title{ font-family:'Rammetto One',cursive; font-weight:400; font-size:1.6rem; margin:0 0 1.75rem; }
+  @media screen and (min-width:768px){ .detail-title{ font-size:2rem; } }
+
+  .tool-list{ display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:2.25rem; }
+  .tool-pill{
+    font-size:.75rem; padding:.3rem .7rem; border-radius:999px;
+    border:1px solid currentColor; opacity:.7;
+  }
+
+  .detail-body{ max-width:42rem; }
+  .detail-body p{ margin:0 0 1.5rem; padding-right:1rem; }
+
+  .placeholder-note{
+    font-size:.75rem; opacity:.5; margin-top:4rem; padding-top:1.5rem;
+    border-top:1px dashed currentColor;
+  }
+</style>
 </head>
 <body>
-<x-dc>
-<helmet>
-<style>
-  *{box-sizing:border-box;}
-  html,body{margin:0;height:100%;background:#fff;}
-  body{font-family:Georgia,'Times New Roman',serif;color:#1a1a1a;-webkit-font-smoothing:antialiased;}
-  a{color:#1a44cc;text-decoration:none;} a:hover{text-decoration:underline;}
-  [contenteditable][data-ph]:empty:before{content:attr(data-ph);color:#bcbcbc;font-style:italic;}
-  ::selection{background:#1a44cc;color:#fff;}
-</style>
-</helmet>
-<div style="position:relative;width:100vw;height:100vh;overflow:hidden;display:flex;flex-direction:column;background:#fff;">
+<main class="container">
 
-  <div style="display:flex;justify-content:center;padding:13px 16px 0;flex:none;">
-    <div style="{{ headerInnerStyle }}">
-      <h1 style="margin: 0; font-size: 20px; font-weight: normal; letter-spacing: .2px; font-family: 'Roboto', sans-serif">Xavier Dersy</h1>
-      <div style="position:relative;" ref="{{ pwWrapRef }}">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <sc-if value="{{ showStatus }}" hint-placeholder-val="{{ false }}">
-            <span title="{{ statusTitle }}" style="{{ statusStyle }}">{{ statusText }}</span>
-          </sc-if>
-          <span onClick="{{ lockClick }}" title="{{ lockHint }}" style="{{ lockStyle }}" style-hover="{{ lockHoverStyle }}">
-            <div style="{{ lockShackleStyle }}"></div>
-            <div style="{{ lockBodyStyle }}"></div>
-          </span>
-        </div>
-        <sc-if value="{{ pwOpen }}" hint-placeholder-val="{{ false }}">
-          <input type="password" autoFocus="{{ true }}" onKeyDown="{{ onPwKey }}" placeholder="{{ pwPlaceholder }}" style="{{ pwInputStyle }}" />
-        </sc-if>
-        <sc-if value="{{ tokenOpen }}" hint-placeholder-val="{{ false }}">
-          <input type="password" autoFocus="{{ true }}" onKeyDown="{{ onTokenKey }}" placeholder="{{ tokenPlaceholder }}" style="{{ pwInputStyle }}" />
-        </sc-if>
-      </div>
+  <section class="home" id="home">
+    <h1 class="name">Xavier Dersy</h1>
+    <p class="intro">Placeholder intro line — a sentence or two about what you do and who you help. Replace this with your own bio.</p>
+
+    <div class="social-links">
+      <a class="social-anchor" href="mailto:xavier.dersy@gmail.com" aria-label="Email">
+        <svg viewBox="0 0 24 24"><path d="M2 4h20v16H2V4zm2 2v.01L12 12l8-5.99V6H4zm16 2.24-7.4 5.55a1 1 0 0 1-1.2 0L4 8.24V18h16V8.24z"/></svg>
+      </a>
+      <a class="social-anchor" href="https://github.com/nouillepascuite" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55v-2.14c-3.2.7-3.87-1.36-3.87-1.36-.53-1.33-1.29-1.69-1.29-1.69-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.64 1.59.24 2.76.12 3.05.74.8 1.19 1.82 1.19 3.08 0 4.41-2.69 5.38-5.25 5.67.42.36.78 1.07.78 2.16v3.2c0 .3.21.66.79.55A10.52 10.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+      </a>
     </div>
-  </div>
 
-  <div ref="{{ containerRef }}" style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:16px;">
-    <div ref="{{ gridRef }}" style="{{ gridStyle }}">
-      <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="10">
-        <div onClick="{{ t.open }}" onDrop="{{ t.onDrop }}" onDragOver="{{ allowDrop }}" title="{{ t.hint }}" style="position:relative;background:#fff;border:1px solid #e2e2e2;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;" style-hover="{{ t.hover }}">
-          <span style="{{ t.numStyle }}">{{ t.label }}</span>
-          <div style="{{ t.bg }}"></div>
-        </div>
-      </sc-for>
-    </div>
-  </div>
+    <h2 class="sub-heading">Projects</h2>
+    <div class="cards" id="cardsRow"></div>
+  </section>
 
-  <sc-if value="{{ open }}" hint-placeholder-val="{{ false }}">
-    <div onClick="{{ close }}" style="position:fixed;inset:0;background:rgba(17,17,17,.3);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding:5vh 16px;">
-      <div onClick="{{ stop }}" style="position:relative;width:min(720px,94vw);max-height:90vh;overflow-y:auto;background:#fff;border-radius:8px;box-shadow:0 24px 70px rgba(0,0,0,.2);padding:44px 48px 52px;">
+  <section class="detail" id="detail">
+    <button class="back-btn" id="backBtn" aria-label="Back">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l4.88-4.88a1 1 0 1 0-1.42-1.41l-6.58 6.58a1 1 0 0 0 0 1.42l6.58 6.58a1 1 0 0 0 1.42-1.41L7.83 13H20a1 1 0 0 0 0-2Z"/></svg>
+    </button>
+    <div id="detailContent"></div>
+  </section>
 
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;">
-          <div style="display:flex;align-items:center;gap:16px;font-family:'Courier New',monospace;font-size:11px;letter-spacing:1.5px;color:#a6a6a6;">
-            <span onClick="{{ prev }}" style="cursor:pointer;font-size:15px;">←</span>
-            <span>{{ activeLabel }} / 10</span>
-            <span onClick="{{ next }}" style="cursor:pointer;font-size:15px;">→</span>
-          </div>
-          <span onClick="{{ close }}" style="cursor:pointer;font-size:22px;line-height:1;color:#9a9a9a;">×</span>
-        </div>
+</main>
 
-        <div contentEditable="{{ unlocked }}" suppressContentEditableWarning="{{ true }}" data-ph="{{ titlePh }}" onBlur="{{ onTitleBlur }}" dangerouslySetInnerHTML="{{ titleHtml }}" style="font-size:30px;line-height:1.2;font-weight:normal;outline:none;margin-bottom:14px;"></div>
+<script>
+  // ---- Placeholder project data — replace title/teaser/body/tools/color per project. ----
+  const PROJECTS = [
+    { id:'project-one',   title:'Project One',   teaser:'A short one-line teaser.', color:'#F45D48', tools:['React','Figma'],
+      body:'Placeholder case-study copy for Project One. Replace with the real story: the problem, your approach, and the outcome.' },
+    { id:'project-two',   title:'Project Two',   teaser:'A short one-line teaser.', color:'#3F8EFC', tools:['Vue','Node'],
+      body:'Placeholder case-study copy for Project Two. Replace with the real story: the problem, your approach, and the outcome.' },
+    { id:'project-three', title:'Project Three', teaser:'A short one-line teaser.', color:'#FFC145', tools:['Swift','Sketch'],
+      body:'Placeholder case-study copy for Project Three. Replace with the real story: the problem, your approach, and the outcome.' },
+    { id:'project-four',  title:'Project Four',  teaser:'A short one-line teaser.', color:'#2EC4B6', tools:['Python','AWS'],
+      body:'Placeholder case-study copy for Project Four. Replace with the real story: the problem, your approach, and the outcome.' },
+    { id:'project-five',  title:'Project Five',  teaser:'A short one-line teaser.', color:'#9B5DE5', tools:['TypeScript','GraphQL'],
+      body:'Placeholder case-study copy for Project Five. Replace with the real story: the problem, your approach, and the outcome.' },
+    { id:'project-six',   title:'Project Six',   teaser:'A short one-line teaser.', color:'#FF6F91', tools:['Three.js','WebGL'],
+      body:'Placeholder case-study copy for Project Six. Replace with the real story: the problem, your approach, and the outcome.' }
+  ];
 
-        <div contentEditable="{{ unlocked }}" suppressContentEditableWarning="{{ true }}" data-ph="{{ descPh }}" onBlur="{{ onDescBlur }}" dangerouslySetInnerHTML="{{ descHtml }}" style="font-size:15px;line-height:1.65;color:#3a3a3a;outline:none;"></div>
+  // Simple abstract placeholder mark so each card/detail has *something* distinct
+  // to look at until real illustrations exist.
+  function placeholderMark(color, seed){
+    const a = 30 + (seed * 37) % 40;
+    const b = 30 + (seed * 61) % 40;
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" rx="20" fill="${color}22"/>
+      <circle cx="${a}" cy="40" r="26" fill="${color}"/>
+      <circle cx="${100-b}" cy="62" r="20" fill="${color}bb"/>
+    </svg>`;
+  }
 
-        <div style="display:flex;flex-direction:column;gap:14px;margin-top:30px;">
-          <sc-for list="{{ photos }}" as="p" hint-placeholder-count="0">
-            <div onDrop="{{ p.onDrop }}" onDragOver="{{ allowDrop }}" style="position:relative;">
-              <div style="{{ p.style }}"></div>
-              <span onClick="{{ p.remove }}" style="{{ p.removeStyle }}">REMOVE</span>
-            </div>
-          </sc-for>
-          <sc-if value="{{ canAdd }}" hint-placeholder-val="{{ true }}">
-            <div onClick="{{ addNext }}" onDrop="{{ addDrop }}" onDragOver="{{ allowDrop }}" style="border:1px dashed #d2d2d2;border-radius:5px;padding:44px 20px;text-align:center;cursor:pointer;color:#b0b0b0;font-family:'Courier New',monospace;font-size:12px;letter-spacing:.5px;">+ add image · or drop one here</div>
-          </sc-if>
-        </div>
-      </div>
-    </div>
-  </sc-if>
+  const cardsRow = document.getElementById('cardsRow');
+  PROJECTS.forEach((p, i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'card';
+    btn.innerHTML = `
+      <span class="card-media" style="background:${p.color}22">${placeholderMark(p.color, i+1)}</span>
+      <span class="card-title">${p.title}</span>
+      <span class="card-teaser">${p.teaser}</span>
+    `;
+    btn.addEventListener('click', ()=>{ location.hash = p.id; });
+    cardsRow.appendChild(btn);
+  });
 
-  <input type="file" accept="image/*" ref="{{ fileRef }}" onChange="{{ onFile }}" style="display:none;">
-</div>
-</x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#111111&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#1a44cc&quot;,&quot;#111111&quot;,&quot;#b0451f&quot;,&quot;#2f7d4f&quot;]},&quot;showTileNumbers&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
-const PW_HASH = '7b653a62faee3d451d20a3c84a5737c5f2d6f2a60d027fc5c6cd014d2a3f396c';
-const GH_OWNER = 'nouillepascuite';
-const GH_REPO = 'Portfolio-Xavier-Dersy';
-const GH_BRANCH = 'main';
-const CONTENT_PATH = 'content.json';
+  const homeEl = document.getElementById('home');
+  const detailEl = document.getElementById('detail');
+  const detailContent = document.getElementById('detailContent');
+  document.getElementById('backBtn').addEventListener('click', ()=>{ location.hash = ''; });
 
-function b64EncodeUnicode(str){
-  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode('0x' + p1)));
-}
+  function renderDetail(p){
+    detailContent.innerHTML = `
+      <span class="detail-media" style="background:${p.color}22">${placeholderMark(p.color, p.title.length)}</span>
+      <h1 class="detail-title">${p.title}</h1>
+      <div class="tool-list">${p.tools.map(t=>`<span class="tool-pill">${t}</span>`).join('')}</div>
+      <div class="detail-body"><p>${p.body}</p></div>
+    `;
+  }
 
-async function mapLimit(items, limit, fn){
-  const results = new Array(items.length);
-  let i = 0;
-  async function worker(){
-    while(i < items.length){
-      const idx = i++;
-      results[idx] = await fn(items[idx], idx);
+  function route(){
+    const id = location.hash.replace('#','');
+    const p = PROJECTS.find(x=>x.id===id);
+    if(p){
+      renderDetail(p);
+      homeEl.classList.add('is-hidden');
+      detailEl.classList.add('is-active');
+      window.scrollTo(0,0);
+    } else {
+      homeEl.classList.remove('is-hidden');
+      detailEl.classList.remove('is-active');
     }
   }
-  await Promise.all(Array.from({length: Math.min(limit, items.length)}, worker));
-  return results;
-}
-
-class Component extends DCLogic {
-  state = { open:false, active:0, view:'t0', images:{}, texts:{}, localPreview:{}, unlocked:false, pwOpen:false, pwError:false, ghToken:'', tokenOpen:false, tokenError:false, publishing:false, publishError:'', mosaicWidth:0, gridCols:5, tileSize:120 };
-  fileRef = React.createRef();
-  pwWrapRef = React.createRef();
-  gridRef = React.createRef();
-  containerRef = React.createRef();
-  pendingKey = null;
-  _images = {};
-  _texts = {};
-  _pendingImages = {};
-
-  componentDidMount(){
-    this.loadContent();
-    let ghToken=''; try{ ghToken = sessionStorage.getItem('pm_gh_token_v1') || ''; }catch(_){}
-    let unlocked=false; try{ unlocked = sessionStorage.getItem('pm_unlocked_v1')==='1' && !!ghToken; }catch(_){}
-    this.setState({ ghToken, unlocked });
-    this._key = this.onKey.bind(this);
-    window.addEventListener('keydown', this._key);
-    this._outsideClick = this.onOutsideClick.bind(this);
-    document.addEventListener('mousedown', this._outsideClick);
-    if(this.gridRef.current && typeof ResizeObserver!=='undefined'){
-      this._ro = new ResizeObserver((entries)=>{
-        const box = entries[0] && entries[0].contentRect;
-        const w = box ? box.width : this.gridRef.current.getBoundingClientRect().width;
-        this.setState({ mosaicWidth: Math.round(w) });
-      });
-      this._ro.observe(this.gridRef.current);
-    }
-    if(this.containerRef.current && typeof ResizeObserver!=='undefined'){
-      this._fitRo = new ResizeObserver((entries)=>{
-        const box = entries[0] && entries[0].contentRect;
-        if(!box) return;
-        const { cols, tileSize } = this.fitTiles(box.width, box.height, 10, 6);
-        this.setState({ gridCols: cols, tileSize });
-      });
-      this._fitRo.observe(this.containerRef.current);
-    }
-  }
-  componentWillUnmount(){
-    window.removeEventListener('keydown', this._key);
-    document.removeEventListener('mousedown', this._outsideClick);
-    if(this._ro) this._ro.disconnect();
-    if(this._fitRo) this._fitRo.disconnect();
-  }
-
-  // Picks the column count (1..n) that lets n square tiles fill the
-  // available box as large as possible, given the last row may be partial.
-  fitTiles(w, h, n, gap){
-    let best = { cols:1, tileSize:0 };
-    for(let cols=1; cols<=n; cols++){
-      const rows = Math.ceil(n/cols);
-      const size = Math.min((w-gap*(cols-1))/cols, (h-gap*(rows-1))/rows);
-      if(size > best.tileSize) best = { cols, tileSize:size };
-    }
-    return { cols: best.cols, tileSize: Math.max(0, Math.floor(best.tileSize)) };
-  }
-
-  loadContent(){
-    const apply = (txt)=>{ try{ const j = JSON.parse(txt); this._images = j.images||{}; this._texts = j.texts||{}; this.setState({ images: this._images, texts: this._texts }); }catch(_){} };
-    fetch('content.json')
-      .then(r=> r.ok ? r.text() : Promise.reject())
-      .then(apply)
-      .catch(()=>{
-        fetch(`https://${GH_OWNER}.github.io/${GH_REPO}/content.json`)
-          .then(r=> r.ok ? r.text() : Promise.reject())
-          .then(apply)
-          .catch(()=>{});
-      });
-  }
-
-  onOutsideClick(e){
-    if(!this.state.pwOpen && !this.state.tokenOpen) return;
-    if(this.pwWrapRef.current && this.pwWrapRef.current.contains(e.target)) return;
-    this.setState({ pwOpen:false, pwError:false, tokenOpen:false, tokenError:false });
-  }
-
-  async checkPassword(pw){
-    try{
-      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-      const hex = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-      return hex === PW_HASH;
-    }catch(_){ return false; }
-  }
-
-  async verifyToken(token){
-    try{
-      const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}`, { headers:{ Authorization:'token '+token, Accept:'application/vnd.github+json' } });
-      if(!res.ok) return false;
-      const j = await res.json();
-      return !!(j.permissions && j.permissions.push);
-    }catch(_){ return false; }
-  }
-
-  onKey(e){
-    if(!this.state.open) return;
-    if(e.key==='Escape'){ this.setState({open:false}); return; }
-    if(document.activeElement && document.activeElement.isContentEditable) return;
-    if(e.key==='ArrowLeft') this.go(-1);
-    else if(e.key==='ArrowRight') this.go(1);
-  }
-
-  go(d){ this.setState(s=>{ const n=(s.active+d+10)%10; return { active:n, view:'t'+n }; }); }
-  openAt(n){ this.setState({ open:true, active:n, view:'t'+n }); }
-
-  ghHeaders(extra){
-    return Object.assign({ Authorization:'token '+this.state.ghToken, Accept:'application/vnd.github+json' }, extra||{});
-  }
-
-  async createBlob(base64Content){
-    const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/blobs`, { method:'POST', headers:this.ghHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ content: base64Content, encoding:'base64' }) });
-    if(!res.ok) throw new Error('blob create failed ('+res.status+')');
-    const j = await res.json();
-    return j.sha;
-  }
-
-  // Batches every pending image + the content.json update into a single atomic
-  // commit (blobs -> tree -> commit -> ref update) instead of one Contents-API
-  // write per file. This is what makes uploading to many tiles quick and
-  // reliable: one fast commit regardless of how many files changed, and no
-  // per-file sha races since only the branch ref itself can conflict.
-  async publishBatch(pendingImages, images, texts, isRetry){
-    const imagePaths = Object.keys(pendingImages);
-    const contentBase64 = b64EncodeUnicode(JSON.stringify({images,texts}, null, 2));
-
-    const [imageBlobShas, contentBlobSha, branchRes] = await Promise.all([
-      mapLimit(imagePaths, 6, (path)=>this.createBlob(pendingImages[path])),
-      this.createBlob(contentBase64),
-      fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/branches/${GH_BRANCH}`, { headers: this.ghHeaders() })
-    ]);
-    if(!branchRes.ok) throw new Error('could not read branch ('+branchRes.status+')');
-    const branchInfo = await branchRes.json();
-    const baseCommitSha = branchInfo.commit.sha;
-    const baseTreeSha = branchInfo.commit.commit.tree.sha;
-
-    const treeEntries = imagePaths.map((path,i)=>({ path, mode:'100644', type:'blob', sha:imageBlobShas[i] }));
-    treeEntries.push({ path: CONTENT_PATH, mode:'100644', type:'blob', sha: contentBlobSha });
-
-    const treeRes = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/trees`, { method:'POST', headers:this.ghHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ base_tree: baseTreeSha, tree: treeEntries }) });
-    if(!treeRes.ok) throw new Error('tree create failed ('+treeRes.status+')');
-    const treeJson = await treeRes.json();
-
-    const commitRes = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/commits`, { method:'POST', headers:this.ghHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ message:'Publish portfolio updates', tree: treeJson.sha, parents:[baseCommitSha] }) });
-    if(!commitRes.ok) throw new Error('commit create failed ('+commitRes.status+')');
-    const commitJson = await commitRes.json();
-
-    const refRes = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/refs/heads/${GH_BRANCH}`, { method:'PATCH', headers:this.ghHeaders({'Content-Type':'application/json'}), body: JSON.stringify({ sha: commitJson.sha }) });
-    if(refRes.status===422 && !isRetry){
-      // Branch moved since we read it (e.g. another tab published meanwhile) — reapply on the new head.
-      return this.publishBatch(pendingImages, images, texts, true);
-    }
-    if(!refRes.ok) throw new Error('publish failed ('+refRes.status+')');
-  }
-
-  queuePublish(task){
-    this._publishQueue = (this._publishQueue || Promise.resolve())
-      .then(()=> task())
-      .then(()=>{ this.setState({ publishing:false }); })
-      .catch((err)=>{ this.setState({ publishing:false, publishError: (err && err.message) || 'publish failed' }); });
-    return this._publishQueue;
-  }
-
-  // Debounces publishes so a burst of edits (dropping images onto many tiles
-  // in quick succession) coalesces into one commit instead of one per edit.
-  scheduleFlush(){
-    this.setState({ publishing:true, publishError:'' });
-    clearTimeout(this._flushTimer);
-    this._flushTimer = setTimeout(()=>this.flushNow(), 1200);
-  }
-
-  flushNow(){
-    clearTimeout(this._flushTimer);
-    this._flushTimer = null;
-    const pendingImages = this._pendingImages;
-    this._pendingImages = {};
-    const images = this._images, texts = this._texts;
-    if(!Object.keys(pendingImages).length && !this._dirty){ this.setState({ publishing:false }); return; }
-    this._dirty = false;
-    this.queuePublish(()=>this.publishBatch(pendingImages, images, texts));
-  }
-
-  saveText(key,val){
-    if(!this.state.unlocked) return;
-    this._texts = {...this._texts, [key]:val};
-    this._dirty = true;
-    this.setState({ texts: this._texts });
-    this.scheduleFlush();
-  }
-
-  pickFor(key){ if(!this.state.unlocked) return; this.pendingKey=key; if(this.fileRef.current) this.fileRef.current.click(); }
-
-  removeImage(key){
-    if(!this.state.unlocked) return;
-    this._images = {...this._images}; delete this._images[key];
-    this._dirty = true;
-    this.setState(s=>{
-      const localPreview={...s.localPreview}; delete localPreview[key];
-      return { images: this._images, localPreview };
-    });
-    this.scheduleFlush();
-  }
-
-  onFile(e){ if(!this.state.unlocked){ e.target.value=''; return; } const f=e.target.files && e.target.files[0]; if(f) this.loadFile(f, this.pendingKey, true); e.target.value=''; }
-  onDropKey(key,e,setView){ e.preventDefault(); if(!this.state.unlocked) return; const f=e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if(f) this.loadFile(f, key, setView); }
-
-  loadFile(file, key, setView){
-    if(!key) return;
-    const isGif = file.type==='image/gif';
-    const finish=(dataUrl)=>{
-      this.setState(s=>{
-        const localPreview = {...s.localPreview, [key]:dataUrl};
-        return setView ? { localPreview, view:key } : { localPreview };
-      });
-      const ext = isGif ? 'gif' : 'jpg';
-      const path = `images/${key}-${Date.now()}.${ext}`;
-      this._pendingImages = { ...this._pendingImages, [path]: dataUrl.split(',')[1] };
-      this._images = { ...this._images, [key]: path };
-      this.setState({ images: this._images });
-      this.scheduleFlush();
-    };
-    if(isGif){ const r=new FileReader(); r.onload=e=>finish(e.target.result); r.readAsDataURL(file); return; }
-    const r=new FileReader();
-    r.onload=e=>{ const img=new Image(); img.onload=()=>{ const max=760; const sc=Math.min(1, max/Math.max(img.width,img.height)); const w=Math.max(1,Math.round(img.width*sc)), h=Math.max(1,Math.round(img.height*sc)); const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); let data; try{ data=c.toDataURL('image/jpeg',0.82); }catch(_){ data=e.target.result; } finish(data); }; img.onerror=()=>finish(e.target.result); img.src=e.target.result; };
-    r.readAsDataURL(file);
-  }
-
-  renderVals(){
-    const { images, texts, localPreview, open, active, view, unlocked, pwOpen, pwError, ghToken, tokenOpen, tokenError, publishing, publishError, mosaicWidth, gridCols, tileSize } = this.state;
-    const accent = this.props.accentColor || '#1a44cc';
-    const showNums = this.props.showTileNumbers !== false;
-    const esc=(t)=>(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-    const srcFor=(k)=> localPreview[k] || images[k];
-
-    const tiles = Array.from({length:10},(_,i)=>{
-      const key='t'+i; const src=srcFor(key); const label=String(i+1).padStart(2,'0');
-      return {
-        label: showNums ? label : '',
-        hint: 'Project '+label+(src?'':' — drop an image or click to open'),
-        numStyle: { fontFamily:"'Courier New',monospace", fontSize:'11px', color:'#cccccc' },
-        bg: src ? { position:'absolute', inset:0, backgroundImage:`url(${src})`, backgroundSize:'cover', backgroundPosition:'center' } : { display:'none' },
-        hover: { boxShadow:`inset 0 0 0 2px ${accent}`, zIndex:2 },
-        open: ()=>this.openAt(i),
-        onDrop: (e)=>this.onDropKey(key,e,false)
-      };
-    });
-
-    const n=active;
-    const orderKeys=['t'+n,'g'+n+'-0','g'+n+'-1','g'+n+'-2','g'+n+'-3','g'+n+'-4'];
-    const photos=orderKeys.filter(k=>srcFor(k)).map(k=>({
-      style: { width:'100%', height:'46vh', minHeight:'220px', maxHeight:'70vh', backgroundImage:`url(${srcFor(k)})`, backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', backgroundColor:'#fafafa', borderRadius:'5px' },
-      onDrop:(e)=>this.onDropKey(k,e,false),
-      remove:(e)=>{ if(e)e.stopPropagation(); this.removeImage(k); },
-      removeStyle: unlocked ? { position:'absolute', top:'10px', right:'10px', background:'rgba(255,255,255,.92)', borderRadius:'4px', padding:'3px 9px', fontFamily:"'Courier New',monospace", fontSize:'10px', letterSpacing:'.5px', color:'#555', cursor:'pointer' } : { display:'none' }
-    }));
-    const firstEmpty=orderKeys.find(k=>!srcFor(k));
-
-    return {
-      tiles, open, unlocked,
-      allowDrop:(e)=>e.preventDefault(),
-      activeLabel: String(n+1).padStart(2,'0'),
-      photos,
-      canAdd: unlocked && !!firstEmpty,
-      addNext: ()=>{ if(firstEmpty) this.pickFor(firstEmpty); },
-      addDrop: (e)=>{ if(firstEmpty) this.onDropKey(firstEmpty,e,false); },
-      titleHtml:{ __html: esc(texts['title'+n]) },
-      descHtml:{ __html: esc(texts['desc'+n]) },
-      titlePh: unlocked ? 'Untitled project' : '',
-      descPh: unlocked ? 'Click to add a description…' : '',
-      onTitleBlur:(e)=>this.saveText('title'+n, e.target.innerText),
-      onDescBlur:(e)=>this.saveText('desc'+n, e.target.innerText),
-      fileRef:this.fileRef,
-      onFile:(e)=>this.onFile(e),
-      pwWrapRef:this.pwWrapRef,
-      gridRef:this.gridRef,
-      containerRef:this.containerRef,
-      gridStyle: { display:'grid', gridTemplateColumns:`repeat(${gridCols},${tileSize}px)`, gridAutoRows:`${tileSize}px`, gap:'6px' },
-      headerInnerStyle: { width: mosaicWidth ? mosaicWidth+'px' : 'auto', display:'flex', alignItems:'baseline', justifyContent:'space-between' },
-      close:(e)=>{ if(e)e.stopPropagation(); this.setState({open:false}); },
-      stop:(e)=>e.stopPropagation(),
-      prev:(e)=>{ if(e)e.stopPropagation(); this.go(-1); },
-      next:(e)=>{ if(e)e.stopPropagation(); this.go(1); },
-
-      lockHint: unlocked ? 'Editing unlocked — click to lock' : 'Click to unlock editing',
-      lockStyle: { display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', width:'26px', height:'26px', cursor:'pointer' },
-      lockHoverStyle: { filter:'brightness(0.65)' },
-      lockShackleStyle: { width:'9px', height:'7px', border:'1.6px solid ' + (unlocked ? accent : '#c7c7c7'), borderBottom:'none', borderRadius:'5px 5px 0 0', boxSizing:'border-box' },
-      lockBodyStyle: { width:'13px', height:'9px', background: unlocked ? accent : '#c7c7c7', borderRadius:'1.5px', marginTop:'-1px' },
-      lockClick: (e)=>{
-        e.stopPropagation();
-        if(this.state.unlocked){
-          if(this._flushTimer) this.flushNow();
-          try{ sessionStorage.removeItem('pm_unlocked_v1'); }catch(_){}
-          this.setState({ unlocked:false, pwOpen:false, pwError:false, tokenOpen:false, tokenError:false });
-        } else {
-          this.setState({ pwOpen:true, pwError:false });
-        }
-      },
-
-      pwOpen,
-      pwPlaceholder: pwError ? 'wrong' : 'password',
-      pwInputStyle: { position:'absolute', top:'26px', right:0, zIndex:50, width:'140px', fontSize:'11px', fontFamily:"'Courier New',monospace", letterSpacing:'.5px', padding:'5px 7px', border: (pwError||tokenError) ? '1px solid #c0392b' : '1px solid #ddd', borderRadius:'3px', outline:'none', color:'#333', background:'#fff', boxShadow:'0 4px 14px rgba(0,0,0,.08)' },
-      onPwKey: async (e)=>{
-        if(e.key==='Escape'){ this.setState({ pwOpen:false, pwError:false }); return; }
-        if(e.key!=='Enter') return;
-        const val = e.target.value;
-        const ok = await this.checkPassword(val);
-        if(!ok){ e.target.value=''; this.setState({ pwError:true }); return; }
-        if(this.state.ghToken){
-          this.setState({ pwOpen:false, pwError:false, unlocked:true });
-          try{ sessionStorage.setItem('pm_unlocked_v1','1'); }catch(_){}
-        } else {
-          this.setState({ pwOpen:false, pwError:false, tokenOpen:true, tokenError:false });
-        }
-      },
-
-      tokenOpen,
-      tokenPlaceholder: tokenError ? 'invalid token' : 'github token',
-      onTokenKey: async (e)=>{
-        if(e.key==='Escape'){ this.setState({ tokenOpen:false, tokenError:false }); return; }
-        if(e.key!=='Enter') return;
-        const val = e.target.value.trim();
-        if(!val) return;
-        const ok = await this.verifyToken(val);
-        if(ok){
-          try{ sessionStorage.setItem('pm_gh_token_v1', val); sessionStorage.setItem('pm_unlocked_v1','1'); }catch(_){}
-          this.setState({ ghToken:val, tokenOpen:false, tokenError:false, unlocked:true });
-        } else {
-          e.target.value='';
-          this.setState({ tokenError:true });
-        }
-      },
-
-      showStatus: unlocked && (publishing || !!publishError),
-      statusText: publishing ? 'saving…' : (publishError ? 'error' : ''),
-      statusTitle: publishError || '',
-      statusStyle: { fontSize:'10px', fontFamily:"'Courier New',monospace", letterSpacing:'.5px', color: publishError ? '#c0392b' : '#999999' }
-    };
-  }
-}
+  window.addEventListener('hashchange', route);
+  route();
 </script>
+
 </body>
 </html>

@@ -98,23 +98,35 @@
     cursor:pointer;
     border:0; background:none; padding:0; text-align:left; font:inherit; color:inherit;
   }
+  .card-media-wrap{ position:relative; margin-bottom:1.1rem; }
   .card-media{
-    width:100%; height:calc(var(--item-height) - 4.75rem); border-radius:14px; margin-bottom:1.1rem;
+    position:relative; z-index:1;
+    width:100%; height:calc(var(--item-height) - 4.75rem); border-radius:14px;
     display:flex; align-items:center; justify-content:center; overflow:hidden;
-    box-shadow:0 10px 24px -6px rgba(0,0,0,.18);
-    transition:transform .22s ease, box-shadow .22s ease;
+    transition:transform .3s cubic-bezier(.19,1,.22,1);
   }
   .card-media svg{ width:62%; height:62%; }
-  .card:hover .card-media, .card:focus-visible .card-media{
-    transform:translateY(-6px);
-    box-shadow:0 22px 34px -10px rgba(0,0,0,.28);
+  /* Layered shadow: a big soft one blooms in from a tucked-in scale, plus a
+     tight close one always faintly present — gives the "lifting off the
+     page" feel on hover instead of a single flat box-shadow. */
+  .card-shadow-far, .card-shadow-near{
+    content:''; position:absolute; inset:0; border-radius:14px;
+    transition:opacity .35s cubic-bezier(.19,1,.22,1), transform .35s cubic-bezier(.19,1,.22,1);
   }
+  .card-shadow-far{ box-shadow:-40px 46px 32px 6px rgba(0,0,0,.16); opacity:0; transform:scale(.8); transform-origin:top right; }
+  .card-shadow-near{ box-shadow:0 10px 22px -8px rgba(0,0,0,.22); opacity:1; }
+  .card:hover .card-media, .card:focus-visible .card-media{ transform:translateY(-8px); }
+  .card:hover .card-shadow-far, .card:focus-visible .card-shadow-far{ opacity:.55; transform:none; }
+  .card:hover .card-shadow-near, .card:focus-visible .card-shadow-near{ opacity:1; transform:translateY(-8px); }
   .card-title{ font-size:.95rem; text-transform:uppercase; letter-spacing:.03em; margin-bottom:.35rem; }
   .card-teaser{ font-size:.85rem; opacity:.65; }
 
   .detail{ display:none; }
   .detail.is-active{ display:block; }
   .home.is-hidden{ display:none; }
+  .home, .detail{ transition:opacity .3s cubic-bezier(.19,1,.22,1), transform .3s cubic-bezier(.19,1,.22,1); }
+  .home.is-leaving, .detail.is-entering{ opacity:0; transform:translateY(-14px); }
+  .detail.is-leaving, .home.is-entering{ opacity:0; transform:translateY(14px); }
 
   .back-btn{
     width:2.5rem; height:2.5rem; border-radius:50%;
@@ -225,7 +237,11 @@
       const btn = document.createElement('button');
       btn.className = 'card';
       btn.innerHTML = `
-        <span class="card-media" style="background:${p.color}22">${placeholderMark(p.color, i+1)}</span>
+        <span class="card-media-wrap">
+          <span class="card-shadow-far"></span>
+          <span class="card-shadow-near"></span>
+          <span class="card-media" style="background:${p.color}22">${placeholderMark(p.color, i+1)}</span>
+        </span>
         <span class="card-title">${p.title}</span>
         <span class="card-teaser">${p.teaser}</span>
       `;
@@ -271,17 +287,51 @@
     `;
   }
 
+  // Sequenced fade+slide transition between the home and detail views (an
+  // eased hand-rolled equivalent of a spring-driven page transition — leave,
+  // then swap content, then enter).
+  const TRANSITION_MS = 300;
+  let transitioning = false;
+  let initialRoute = true;
+
   function route(){
     const id = location.hash.replace('#','');
     const p = PROJECTS.find(x=>x.id===id);
-    if(p){
+
+    if(initialRoute){
+      initialRoute = false;
+      if(p){ renderDetail(p); homeEl.classList.add('is-hidden'); detailEl.classList.add('is-active'); }
+      return;
+    }
+    if(transitioning) return;
+    const currentlyDetail = detailEl.classList.contains('is-active');
+
+    if(p && !currentlyDetail){
+      transitioning = true;
+      homeEl.classList.add('is-leaving');
+      setTimeout(()=>{
+        homeEl.classList.remove('is-leaving');
+        homeEl.classList.add('is-hidden');
+        renderDetail(p);
+        detailEl.classList.add('is-active','is-entering');
+        void detailEl.offsetWidth;
+        requestAnimationFrame(()=>{ detailEl.classList.remove('is-entering'); });
+        window.scrollTo(0,0);
+        transitioning = false;
+      }, TRANSITION_MS);
+    } else if(p && currentlyDetail){
       renderDetail(p);
-      homeEl.classList.add('is-hidden');
-      detailEl.classList.add('is-active');
-      window.scrollTo(0,0);
-    } else {
-      homeEl.classList.remove('is-hidden');
-      detailEl.classList.remove('is-active');
+    } else if(!p && currentlyDetail){
+      transitioning = true;
+      detailEl.classList.add('is-leaving');
+      setTimeout(()=>{
+        detailEl.classList.remove('is-active','is-leaving');
+        homeEl.classList.remove('is-hidden');
+        homeEl.classList.add('is-entering');
+        void homeEl.offsetWidth;
+        requestAnimationFrame(()=>{ homeEl.classList.remove('is-entering'); });
+        transitioning = false;
+      }, TRANSITION_MS);
     }
   }
   window.addEventListener('hashchange', route);

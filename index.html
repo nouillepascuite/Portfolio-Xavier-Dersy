@@ -127,8 +127,16 @@
   .card-shadow-near{ box-shadow:0 10px 22px -8px rgba(0,0,0,.28); opacity:0; }
   .card:hover .card-shadow-far, .card:focus-visible .card-shadow-far{ opacity:.9; transform:none; }
   .card:hover .card-shadow-near, .card:focus-visible .card-shadow-near{ opacity:.5; }
-  .card-title{ font-size:.95rem; text-transform:uppercase; letter-spacing:.03em; margin-bottom:.35rem; }
-  .card-teaser{ font-size:.85rem; opacity:.65; }
+  /* The reference site's cards have no visible title/teaser text below the
+     image at all — identity is conveyed by a small client-logo image
+     overlaid in the top-left corner, falling back to plain bold text there
+     when no logo exists (which is the case here, until real logos exist). */
+  .card-label{
+    position:absolute; top:.9rem; left:.9rem; z-index:2;
+    font-size:.8rem; font-weight:600; letter-spacing:.02em;
+    color:#333; background:rgba(255,255,255,.88);
+    padding:.3rem .6rem; border-radius:6px;
+  }
 
   .detail{ display:none; }
   .detail.is-active{ display:block; }
@@ -202,19 +210,19 @@
 </main>
 
 <script>
-  // ---- Placeholder project data — replace title/teaser/body/tools/color per project. ----
+  // ---- Placeholder project data — replace title/body/tools/color per project. ----
   const PROJECTS = [
-    { id:'project-one',   title:'Project One',   teaser:'A short one-line teaser.', color:'#F45D48', tools:['React','Figma'],
+    { id:'project-one',   title:'Project One',   color:'#F45D48', tools:['React','Figma'],
       body:'Placeholder case-study copy for Project One. Replace with the real story: the problem, your approach, and the outcome.' },
-    { id:'project-two',   title:'Project Two',   teaser:'A short one-line teaser.', color:'#3F8EFC', tools:['Vue','Node'],
+    { id:'project-two',   title:'Project Two',   color:'#3F8EFC', tools:['Vue','Node'],
       body:'Placeholder case-study copy for Project Two. Replace with the real story: the problem, your approach, and the outcome.' },
-    { id:'project-three', title:'Project Three', teaser:'A short one-line teaser.', color:'#FFC145', tools:['Swift','Sketch'],
+    { id:'project-three', title:'Project Three', color:'#FFC145', tools:['Swift','Sketch'],
       body:'Placeholder case-study copy for Project Three. Replace with the real story: the problem, your approach, and the outcome.' },
-    { id:'project-four',  title:'Project Four',  teaser:'A short one-line teaser.', color:'#2EC4B6', tools:['Python','AWS'],
+    { id:'project-four',  title:'Project Four',  color:'#2EC4B6', tools:['Python','AWS'],
       body:'Placeholder case-study copy for Project Four. Replace with the real story: the problem, your approach, and the outcome.' },
-    { id:'project-five',  title:'Project Five',  teaser:'A short one-line teaser.', color:'#9B5DE5', tools:['TypeScript','GraphQL'],
+    { id:'project-five',  title:'Project Five',  color:'#9B5DE5', tools:['TypeScript','GraphQL'],
       body:'Placeholder case-study copy for Project Five. Replace with the real story: the problem, your approach, and the outcome.' },
-    { id:'project-six',   title:'Project Six',   teaser:'A short one-line teaser.', color:'#FF6F91', tools:['Three.js','WebGL'],
+    { id:'project-six',   title:'Project Six',   color:'#FF6F91', tools:['Three.js','WebGL'],
       body:'Placeholder case-study copy for Project Six. Replace with the real story: the problem, your approach, and the outcome.' }
   ];
 
@@ -250,9 +258,8 @@
           <span class="card-shadow-far"></span>
           <span class="card-shadow-near"></span>
           <span class="card-media" style="background:${p.color}22">${placeholderMark(p.color, i+1)}</span>
+          <span class="card-label">${p.title}</span>
         </span>
-        <span class="card-title">${p.title}</span>
-        <span class="card-teaser">${p.teaser}</span>
       `;
       btn.addEventListener('click', ()=>{ location.hash = p.id; });
       row.appendChild(btn);

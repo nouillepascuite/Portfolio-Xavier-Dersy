@@ -62,6 +62,27 @@
 
   .sub-heading{ font-family:'Rammetto One',cursive; font-weight:400; font-size:1.15rem; margin:0 0 1.5rem; }
 
+  /* Experiments list — matches nick.computer's ListItem component exactly:
+     a <ul> of items, each an external-link anchor with a small icon (that
+     grows a colored circle behind it on hover) + title + description. */
+  .list{ list-style:none; margin:0; padding:0; }
+  .list-item{ margin-bottom:2.5rem; overflow:hidden; }
+  .list-item:last-child{ margin-bottom:0; }
+  .list-anchor{ display:inline-flex; align-items:flex-start; max-width:31rem; }
+  .list-anchor:hover .list-title, .list-anchor:focus .list-title{ text-decoration:underline; }
+  .list-icon-wrap{ height:2rem; width:2rem; margin-right:1rem; position:relative; flex:none; display:flex; align-items:center; justify-content:center; }
+  .list-icon-circle{ position:absolute; inset:0; border-radius:50%; background:#333; opacity:0; transform:scale(.5); transition:opacity .2s ease, transform .2s ease; }
+  .list-icon{ position:relative; z-index:1; width:1.15rem; height:1.15rem; fill:#333; transition:fill .2s ease; }
+  .list-anchor:hover .list-icon-circle, .list-anchor:focus .list-icon-circle{ opacity:1; transform:scale(1.25); }
+  .list-anchor:hover .list-icon, .list-anchor:focus .list-icon{ fill:#fff; }
+  @media (prefers-color-scheme:dark){
+    .list-icon{ fill:#fff; }
+    .list-icon-circle{ background:#fff; }
+    .list-anchor:hover .list-icon, .list-anchor:focus .list-icon{ fill:#333; }
+  }
+  .list-title{ margin:0 0 .35rem; font-size:1rem; }
+  .list-para{ margin:0; font-size:.85rem; opacity:.7; max-width:31rem; }
+
   .cards{
     display:flex; gap:2rem;
     overflow-x:auto; overflow-y:hidden;
@@ -147,7 +168,7 @@
     <div class="cards" id="cardsRow"></div>
 
     <h2 class="sub-heading" style="margin-top:3rem;">Experiments</h2>
-    <div class="cards" id="experimentsRow"></div>
+    <ul class="list" id="experimentsRow"></ul>
   </section>
 
   <section class="detail" id="detail">
@@ -176,14 +197,15 @@
       body:'Placeholder case-study copy for Project Six. Replace with the real story: the problem, your approach, and the outcome.' }
   ];
 
+  // nick.computer's Experiments section links each item straight out to an
+  // external demo (target=_blank), rather than an internal detail page —
+  // replicated here with placeholder hrefs until real experiments/links exist.
   const EXPERIMENTS = [
-    { id:'experiment-one',   title:'Experiment One',   teaser:'Mockup teaser text.', color:'#FF9F1C', tools:['Canvas'],
-      body:'Mockup text for Experiment One. This is placeholder copy standing in for a short write-up of this experiment — what you were exploring and what came out of it.' },
-    { id:'experiment-two',   title:'Experiment Two',   teaser:'Mockup teaser text.', color:'#5C7AFF', tools:['CSS'],
-      body:'Mockup text for Experiment Two. This is placeholder copy standing in for a short write-up of this experiment — what you were exploring and what came out of it.' },
-    { id:'experiment-three', title:'Experiment Three', teaser:'Mockup teaser text.', color:'#06D6A0', tools:['WebAudio'],
-      body:'Mockup text for Experiment Three. This is placeholder copy standing in for a short write-up of this experiment — what you were exploring and what came out of it.' }
+    { href:'#', title:'Experiment One, 2024',   desc:'Mockup text standing in for a short write-up of this experiment — what you were exploring and what came out of it.' },
+    { href:'#', title:'Experiment Two, 2023',   desc:'Mockup text standing in for a short write-up of this experiment — what you were exploring and what came out of it.' },
+    { href:'#', title:'Experiment Three, 2022', desc:'Mockup text standing in for a short write-up of this experiment — what you were exploring and what came out of it.' }
   ];
+  const LIST_ICON = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2 14.5 9.5 22 12 14.5 14.5 12 22 9.5 14.5 2 12 9.5 9.5Z"/></svg>';
 
   // Simple abstract placeholder mark so each card/detail has *something* distinct
   // to look at until real illustrations exist.
@@ -211,8 +233,29 @@
       row.appendChild(btn);
     });
   }
+  function renderList(list, containerId){
+    const ul = document.getElementById(containerId);
+    list.forEach((item)=>{
+      const li = document.createElement('li');
+      li.className = 'list-item';
+      li.innerHTML = `
+        <a class="list-anchor" href="${item.href}" target="_blank" rel="noopener noreferrer">
+          <span class="list-icon-wrap">
+            <span class="list-icon-circle"></span>
+            ${LIST_ICON.replace('<svg ', '<svg class="list-icon" ')}
+          </span>
+          <span>
+            <h3 class="list-title">${item.title}</h3>
+            <p class="list-para">${item.desc}</p>
+          </span>
+        </a>
+      `;
+      ul.appendChild(li);
+    });
+  }
+
   renderCards(PROJECTS, 'cardsRow');
-  renderCards(EXPERIMENTS, 'experimentsRow');
+  renderList(EXPERIMENTS, 'experimentsRow');
 
   const homeEl = document.getElementById('home');
   const detailEl = document.getElementById('detail');
@@ -230,7 +273,7 @@
 
   function route(){
     const id = location.hash.replace('#','');
-    const p = [...PROJECTS, ...EXPERIMENTS].find(x=>x.id===id);
+    const p = PROJECTS.find(x=>x.id===id);
     if(p){
       renderDetail(p);
       homeEl.classList.add('is-hidden');

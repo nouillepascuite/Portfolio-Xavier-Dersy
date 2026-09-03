@@ -10,11 +10,11 @@
 <style>
   :root{
     --item-width: 13.25rem;
-    --item-height: 19rem;
+    --item-height: 20rem;
     --content-max: 60rem;
   }
   @media screen and (min-width:768px){
-    :root{ --item-width: 17.8rem; --item-height: 24rem; }
+    :root{ --item-width: 17.8rem; --item-height: 26rem; }
   }
   *,*:before,*:after{ box-sizing:border-box; }
   html{
@@ -44,8 +44,9 @@
   .container{ max-width:var(--content-max); margin:0 auto; padding:4rem 1.5rem; }
   @media screen and (min-width:768px){ .container{ padding:5rem 3rem; } }
 
-  .name{ font-family:'Rammetto One',cursive; font-weight:400; font-size:2.25rem; margin:0 0 1.25rem; }
-  @media screen and (min-width:768px){ .name{ font-size:3rem; } }
+  .name{ font-family:'Rammetto One',cursive; font-weight:400; font-size:1.6rem; line-height:1.15; margin:0 0 1.25rem; }
+  .name span{ display:block; }
+  @media screen and (min-width:768px){ .name{ font-size:2rem; } }
 
   .intro{ max-width:40ch; margin:0 0 2.5rem; padding-right:1rem; }
 
@@ -71,12 +72,13 @@
   .card{
     flex:none;
     width:var(--item-width);
+    height:var(--item-height);
     display:flex; flex-direction:column;
     cursor:pointer;
     border:0; background:none; padding:0; text-align:left; font:inherit; color:inherit;
   }
   .card-media{
-    width:100%; height:var(--item-width); border-radius:14px; margin-bottom:1.1rem;
+    width:100%; height:calc(var(--item-height) - 4.75rem); border-radius:14px; margin-bottom:1.1rem;
     display:flex; align-items:center; justify-content:center; overflow:hidden;
     box-shadow:0 10px 24px -6px rgba(0,0,0,.18);
     transition:transform .22s ease, box-shadow .22s ease;
@@ -129,7 +131,7 @@
 <main class="container">
 
   <section class="home" id="home">
-    <h1 class="name">Xavier Dersy</h1>
+    <h1 class="name"><span>Xavier</span><span>Dersy</span></h1>
     <p class="intro">Placeholder intro line — a sentence or two about what you do and who you help. Replace this with your own bio.</p>
 
     <div class="social-links">
@@ -141,8 +143,11 @@
       </a>
     </div>
 
-    <h2 class="sub-heading">Projects</h2>
+    <h2 class="sub-heading">Work</h2>
     <div class="cards" id="cardsRow"></div>
+
+    <h2 class="sub-heading" style="margin-top:3rem;">Experiments</h2>
+    <div class="cards" id="experimentsRow"></div>
   </section>
 
   <section class="detail" id="detail">
@@ -171,6 +176,15 @@
       body:'Placeholder case-study copy for Project Six. Replace with the real story: the problem, your approach, and the outcome.' }
   ];
 
+  const EXPERIMENTS = [
+    { id:'experiment-one',   title:'Experiment One',   teaser:'Mockup teaser text.', color:'#FF9F1C', tools:['Canvas'],
+      body:'Mockup text for Experiment One. This is placeholder copy standing in for a short write-up of this experiment — what you were exploring and what came out of it.' },
+    { id:'experiment-two',   title:'Experiment Two',   teaser:'Mockup teaser text.', color:'#5C7AFF', tools:['CSS'],
+      body:'Mockup text for Experiment Two. This is placeholder copy standing in for a short write-up of this experiment — what you were exploring and what came out of it.' },
+    { id:'experiment-three', title:'Experiment Three', teaser:'Mockup teaser text.', color:'#06D6A0', tools:['WebAudio'],
+      body:'Mockup text for Experiment Three. This is placeholder copy standing in for a short write-up of this experiment — what you were exploring and what came out of it.' }
+  ];
+
   // Simple abstract placeholder mark so each card/detail has *something* distinct
   // to look at until real illustrations exist.
   function placeholderMark(color, seed){
@@ -183,18 +197,22 @@
     </svg>`;
   }
 
-  const cardsRow = document.getElementById('cardsRow');
-  PROJECTS.forEach((p, i)=>{
-    const btn = document.createElement('button');
-    btn.className = 'card';
-    btn.innerHTML = `
-      <span class="card-media" style="background:${p.color}22">${placeholderMark(p.color, i+1)}</span>
-      <span class="card-title">${p.title}</span>
-      <span class="card-teaser">${p.teaser}</span>
-    `;
-    btn.addEventListener('click', ()=>{ location.hash = p.id; });
-    cardsRow.appendChild(btn);
-  });
+  function renderCards(list, containerId){
+    const row = document.getElementById(containerId);
+    list.forEach((p, i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'card';
+      btn.innerHTML = `
+        <span class="card-media" style="background:${p.color}22">${placeholderMark(p.color, i+1)}</span>
+        <span class="card-title">${p.title}</span>
+        <span class="card-teaser">${p.teaser}</span>
+      `;
+      btn.addEventListener('click', ()=>{ location.hash = p.id; });
+      row.appendChild(btn);
+    });
+  }
+  renderCards(PROJECTS, 'cardsRow');
+  renderCards(EXPERIMENTS, 'experimentsRow');
 
   const homeEl = document.getElementById('home');
   const detailEl = document.getElementById('detail');
@@ -212,7 +230,7 @@
 
   function route(){
     const id = location.hash.replace('#','');
-    const p = PROJECTS.find(x=>x.id===id);
+    const p = [...PROJECTS, ...EXPERIMENTS].find(x=>x.id===id);
     if(p){
       renderDetail(p);
       homeEl.classList.add('is-hidden');

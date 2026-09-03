@@ -86,7 +86,12 @@
   .cards{
     display:flex; gap:2rem;
     overflow-x:auto; overflow-y:hidden;
-    padding:.5rem .1rem 1.5rem;
+    /* Extra padding gives the hover shadow room to bleed past each card's own
+       box without being clipped by this scroll container; the matching
+       negative margin cancels it back out so the cards stay visually aligned
+       with the heading above them. */
+    padding:1rem 2rem 4rem 3.5rem;
+    margin:-1rem -2rem -4rem -3.5rem;
     -webkit-overflow-scrolling:touch;
     scrollbar-width:thin;
   }
@@ -103,7 +108,7 @@
     position:relative; z-index:1;
     width:100%; height:calc(var(--item-height) - 4.75rem); border-radius:14px;
     display:flex; align-items:center; justify-content:center; overflow:hidden;
-    transition:transform .3s cubic-bezier(.19,1,.22,1);
+    transition:transform .6s cubic-bezier(.22,.61,.36,1);
   }
   .card-media svg{ width:62%; height:62%; }
   /* Layered shadow: a big soft one blooms in from a tucked-in scale, plus a
@@ -111,9 +116,9 @@
      page" feel on hover instead of a single flat box-shadow. */
   .card-shadow-far, .card-shadow-near{
     content:''; position:absolute; inset:0; border-radius:14px;
-    transition:opacity .35s cubic-bezier(.19,1,.22,1), transform .35s cubic-bezier(.19,1,.22,1);
+    transition:opacity .6s cubic-bezier(.22,.61,.36,1), transform .6s cubic-bezier(.22,.61,.36,1);
   }
-  .card-shadow-far{ box-shadow:-40px 46px 32px 6px rgba(0,0,0,.16); opacity:0; transform:scale(.8); transform-origin:top right; }
+  .card-shadow-far{ box-shadow:-18px 26px 30px 4px rgba(0,0,0,.16); opacity:0; transform:scale(.8); transform-origin:top right; }
   .card-shadow-near{ box-shadow:0 10px 22px -8px rgba(0,0,0,.22); opacity:1; }
   .card:hover .card-media, .card:focus-visible .card-media{ transform:translateY(-8px); }
   .card:hover .card-shadow-far, .card:focus-visible .card-shadow-far{ opacity:.55; transform:none; }
